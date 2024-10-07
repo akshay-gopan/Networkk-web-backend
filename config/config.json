@@ -1,0 +1,25 @@
+
+  {
+    "development": {
+      "username": "root",
+      "password": "Root@1234",
+      "database": "Networkk",
+      "host": "localhost",
+      "dialect": "mysql"
+    },
+    "test": {
+      "username": "root",
+      "password": "",
+      "database": "Networkk",
+      "host": "localhost",
+      "dialect": "mysql"
+    },
+    "production": {
+      "username": "root",
+      "password": "",
+      "database": "Networkk",
+      "host": "localhost",
+      "dialect": "mysql"
+    }
+  }
+    
