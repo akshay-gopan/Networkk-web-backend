@@ -1,13 +1,12 @@
 const bcrypt = require('bcrypt');
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/sequelize.config'); // Import your Sequelize instance
+const sequelize = require('../config/sequelize.config'); // Assuming your configured Sequelize instance
 
 module.exports = (sequelize) => {
   const ServiceProvider = sequelize.define('ServiceProvider', {
     serviceProviderId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING, // Changed to STRING to allow the "SP0" prefix
       primaryKey: true,
-      autoIncrement: true,
     },
     fname: {
       type: DataTypes.STRING(100),
@@ -60,8 +59,25 @@ module.exports = (sequelize) => {
     timestamps: true, // Enable createdAt and updatedAt fields
     tableName: 'serviceProviders',
     hooks: {
-      // Hash password before creating a new service provider
-      beforeCreate: async (serviceProvider) => {
+      // Generate "SP0XX" serviceProviderId before creating a new service provider
+      beforeCreate: async (serviceProvider, options) => {
+        // Get the highest serviceProviderId in the format "SP0XX"
+        const lastProvider = await ServiceProvider.findOne({
+          order: [['createdAt', 'DESC']], // Get the last created service provider
+        });
+
+        let newProviderId = "SP01"; // Default first provider ID if no providers exist
+
+        if (lastProvider) {
+          const lastProviderId = lastProvider.serviceProviderId;
+          const numericPart = parseInt(lastProviderId.replace("SP0", ""), 10); // Extract the numeric part of the last ID
+          const newNumericPart = numericPart + 1; // Increment the numeric part
+          newProviderId = `SP0${newNumericPart.toString().padStart(2, '0')}`; // Generate new ID with "SP0" prefix and padding
+        }
+
+        serviceProvider.serviceProviderId = newProviderId; // Set the new service provider ID
+
+        // Hash password before saving
         if (serviceProvider.password) {
           const salt = await bcrypt.genSalt(10);
           serviceProvider.password = await bcrypt.hash(serviceProvider.password, salt);
@@ -83,4 +99,4 @@ module.exports = (sequelize) => {
   };
 
   return ServiceProvider;
-}
+};

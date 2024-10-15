@@ -17,8 +17,8 @@ app.use('/serviceProviders', serviceProviderRoutes);
 
 // Sync database and start server
 db.sequelize.sync({force:false}).then(() => {
-  app.listen(3001, () => {
-    console.log('Server running on port 3001');
+  app.listen(3002, () => {
+    console.log('Server running on port 3002');
   });
 }).catch((err) => {
   console.error('Failed to sync the database:', err);

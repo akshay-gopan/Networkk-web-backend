@@ -1,14 +1,3 @@
-// const { Sequelize } = require('sequelize');
-
-// // Create the Sequelize instance and connect to the database
-// const sequelize = new Sequelize('Networkk', 'Root@1234', null, {
-//   host: 'localhost',
-//   dialect: 'mysql',  // Or whichever database you're using
-// });
-
-// module.exports = sequelize;
-
-
 const { Sequelize } = require('sequelize');
 
 // Load environment variables

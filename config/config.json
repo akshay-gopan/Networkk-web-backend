@@ -2,7 +2,7 @@
   {
     "development": {
       "username": "root",
-      "password": "Root@1234",
+      "password": "root1234",
       "database": "Networkk",
       "host": "localhost",
       "dialect": "mysql"
