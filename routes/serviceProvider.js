@@ -28,6 +28,12 @@ router.post('/signup', async (req, res) => {
       password: hashedPassword,
     });
 
+    //const newServiceProvider = await ServiceProvider.create({ email, password: hashedPassword });
+
+    // Generate a JWT token
+        const token = jwt.sign({ id: newServiceProvider.serviceProviderId }, JWT_SECRET, { expiresIn: '1h' });
+    
+        //Send the token to the client
     res.status(201).json({ message: 'Service provider created successfully', newServiceProvider });
   } catch (error) {
     res.status(400).json({ error: error.message });

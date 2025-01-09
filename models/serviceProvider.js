@@ -10,11 +10,13 @@ module.exports = (sequelize) => {
     },
     fname: {
       type: DataTypes.STRING(100),
-      allowNull: false,
+      allowNull: true,
+      
+      
     },
     lname: {
       type: DataTypes.STRING(100),
-      allowNull: false,
+      allowNull: true,
     },
     email: {
       type: DataTypes.STRING(100),
@@ -39,11 +41,11 @@ module.exports = (sequelize) => {
     },
     phone: {
       type: DataTypes.STRING(15),
-      allowNull: false,
+      allowNull: true,
     },
     username: {
       type: DataTypes.STRING(50),
-      allowNull: false,
+      allowNull: true,
       unique: true,
     },
     aadhaar: {
@@ -70,9 +72,9 @@ module.exports = (sequelize) => {
 
         if (lastProvider) {
           const lastProviderId = lastProvider.serviceProviderId;
-          const numericPart = parseInt(lastProviderId.replace("SP0", ""), 10); // Extract the numeric part of the last ID
+          const numericPart = parseInt(lastProviderId.replace("SP", ""), 10); // Extract the numeric part of the last ID
           const newNumericPart = numericPart + 1; // Increment the numeric part
-          newProviderId = `SP0${newNumericPart.toString().padStart(2, '0')}`; // Generate new ID with "SP0" prefix and padding
+          newProviderId = `SP${newNumericPart.toString().padStart(2, '0')}`; // Generate new ID with "SP0" prefix and padding
         }
 
         serviceProvider.serviceProviderId = newProviderId; // Set the new service provider ID
@@ -98,5 +100,14 @@ module.exports = (sequelize) => {
     return await bcrypt.compare(password, this.password);
   };
 
+  ServiceProvider.associate = (models) => {
+    ServiceProvider.hasMany(models.Service, {
+      foreignKey: 'serviceProviderId',
+      as: 'services',
+    });
+  };
+  
+
   return ServiceProvider;
 };
+

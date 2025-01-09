@@ -6,7 +6,7 @@ const authenticateToken = require('../middleware/authenticateToken'); // Import 
 const router = express.Router();
 
 // Load JWT secret from environment variables
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
+const JWT_SECRET = process.env.JWT_SECRET ;
 
 // Sign-up route (Register and log in)
 router.post('/signup', async (req, res) => {
@@ -43,14 +43,18 @@ router.post('/signin', async (req, res) => {
   try {
     // Find the user by email
     const user = await User.findOne({ where: { email } });
+    console.log("user exist");
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
+     //console.log("Entered password:", password);
+     //console.log("Stored hashed password:", user.password);
+
     // Compare the password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Invalid password' });
+      return res.status(401).json({ message: 'Invalid password',  });
     }
 
     // Generate a JWT token

@@ -20,6 +20,10 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING(100),
       allowNull: false,
       unique: true,
+      validate: {
+        isEmail: true,
+        notEmpty: true,
+      },
     },
     address: {
       type: DataTypes.STRING(255),
@@ -52,8 +56,11 @@ module.exports = (sequelize) => {
       unique: true,
     },
     password: {
-      type: DataTypes.STRING(255),
+      type: DataTypes.STRING(300),
       allowNull: false,
+      validate: {
+        len: [4, 100], // Password must be between 6 and 100 characters
+      },
     }
   }, {
     timestamps: true,  // Enable createdAt and updatedAt
@@ -62,7 +69,7 @@ module.exports = (sequelize) => {
       // Before creating a new user, generate a userId with "U0" prefix
       beforeCreate: async (user, options) => {
         // Get the highest userId in the format "U0XX"
-        const lastUser = await User.findOne({
+        const lastUser = await sequelize.models.User.findOne({
           order: [['createdAt', 'DESC']]  // Get the last created user
         });
 
@@ -70,9 +77,9 @@ module.exports = (sequelize) => {
 
         if (lastUser) {
           const lastUserId = lastUser.userId;
-          const numericPart = parseInt(lastUserId.replace("UR0", ""), 10); // Extract the numeric part of the last ID
+          const numericPart = parseInt(lastUserId.replace("UR", ""), 10); // Extract the numeric part of the last ID
           const newNumericPart = numericPart + 1; // Increment the numeric part
-          newUserId = `UR0${newNumericPart.toString().padStart(2, '0')}`; // Generate new ID with "U0" prefix and padding
+          newUserId = `UR${newNumericPart.toString().padStart(2, '0')}`; // Generate new ID with "U0" prefix and padding
         }
 
         user.userId = newUserId; // Set the new user ID
