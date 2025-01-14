@@ -10,9 +10,7 @@ module.exports = (sequelize) => {
     },
     fname: {
       type: DataTypes.STRING(100),
-      allowNull: true,
-      
-      
+      allowNull: true,     
     },
     lname: {
       type: DataTypes.STRING(100),

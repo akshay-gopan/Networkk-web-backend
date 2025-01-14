@@ -6,6 +6,7 @@ const db = require('./models'); // Import models
 const userRoutes = require('./routes/user'); // Import user routes
 const serviceProviderRoutes = require('./routes/serviceProvider'); // Import serviceProvider routes
 const serviceRoutes = require('./routes/service'); // Import service routes
+const bookingRoutes = require('./routes/booking'); // Import booking routes
 
 
 // CORS options
@@ -26,6 +27,7 @@ app.use(express.json());
 app.use('/users', userRoutes);
 app.use('/serviceProviders', serviceProviderRoutes);
 app.use('/services', serviceRoutes);
+app.use('/bookings', bookingRoutes);
 
 
 
