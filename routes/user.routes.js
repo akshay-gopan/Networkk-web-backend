@@ -67,7 +67,7 @@ router.post('/signin', async (req, res) => {
   }
 });
 
-// Edit profile route (Protected by JWT)
+// Profile update route (Protected by JWT)
 router.put('/profile', authenticateToken, async (req, res) => {
   const { fname, lname, address, latitude, longitude, locality, phone, username, aadhaar } = req.body;
 
