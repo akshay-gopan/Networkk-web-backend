@@ -69,6 +69,18 @@ router.post('/signin', async (req, res) => {
   }
 });
 
+router.get('/profile', authenticateToken, async (req, res) => {
+  try {
+    const serviceProvider = await ServiceProvider.findByPk(req.user.id);
+    if (!serviceProvider) {
+      return res.status(404).json({ message: 'Provider not found' });
+    }
+    res.json(serviceProvider);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Profile updation route (Protected by JWT)
 router.put('/profile', authenticateToken, async (req, res) => {
   const { fname, lname, address, latitude, longitude, locality, phone, username, aadhaar } = req.body;
