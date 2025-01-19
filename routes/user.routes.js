@@ -126,6 +126,26 @@ router.get('/:id', authenticateToken, async (req, res) => {
   }
 });
 
+//Fetch the current user (Protected by JWT)
+router.get('/d/me', authenticateToken, async (req, res) => {
+  
+  try {
+    console.log("User ID from token:", req.user.id); // Debug log
+
+    const user = await User.findByPk(req.user.id); // Fetch user by ID
+    console.log("User:", user); // Debug log
+    if (user) {
+      res.status(200).json(user);
+    } else {
+      res.status(404).json({ error: 'User not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+
 // Update a user (Protected by JWT)
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
