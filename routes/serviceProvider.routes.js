@@ -22,12 +22,13 @@ router.post('/signup', async (req, res) => {
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create the service provider
+    // Create the service provider with all details
     // const newServiceProvider = await ServiceProvider.create({
     //   ...req.body,
     //   password: hashedPassword,
     // });
 
+    //Create the service provider with email and password
     const newServiceProvider = await ServiceProvider.create({ email, password: hashedPassword });
 
     // Generate a JWT token
@@ -53,7 +54,7 @@ router.post('/signin', async (req, res) => {
     }
 
     // Compare the password
-    const isPasswordValid = await bcrypt.compare(password, serviceProvider.password);
+    const isPasswordValid = bcrypt.compare(password, serviceProvider.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid password' });
     }
@@ -63,6 +64,41 @@ router.post('/signin', async (req, res) => {
 
     // Send the token to the client
     res.status(200).json({ message: 'Login successful', token });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Profile updation route (Protected by JWT)
+router.put('/profile', authenticateToken, async (req, res) => {
+  const { fname, lname, address, latitude, longitude, locality, phone, username, aadhaar } = req.body;
+
+  try {
+    // Find the authenticated user by ID (from JWT token)
+    const serviceProvider = await ServiceProvider.findByPk(req.user.id);
+
+    if (!serviceProvider) {
+      return res.status(404).json({ message: 'serviceProvider not found' });
+    }
+
+    // Update serviceProvider profile details
+    serviceProvider.fname = fname || serviceProvider.fname;
+    serviceProvider.lname = lname || serviceProvider.lname;
+    serviceProvider.address = address || serviceProvider.address;
+    serviceProvider.latitude = latitude || serviceProvider.latitude;
+    serviceProvider.longitude = longitude || serviceProvider.longitude;
+    serviceProvider.locality = locality || serviceProvider.locality;
+    serviceProvider.phone = phone || serviceProvider.phone;
+    serviceProvider.username = username || serviceProvider.username;
+    serviceProvider.aadhaar = aadhaar || serviceProvider.aadhaar;
+
+    // If the serviceProvider is updating their password, hash it before saving
+    // if (password) {
+    //   serviceProvider.password = await bcrypt.hash(password, 10);
+    // }
+
+    await serviceProvider.save();
+    res.status(200).json({ message: 'Profile updated successfully', serviceProvider });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
