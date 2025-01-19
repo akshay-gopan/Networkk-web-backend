@@ -23,18 +23,18 @@ router.post('/signup', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create the service provider
-    const newServiceProvider = await ServiceProvider.create({
-      ...req.body,
-      password: hashedPassword,
-    });
+    // const newServiceProvider = await ServiceProvider.create({
+    //   ...req.body,
+    //   password: hashedPassword,
+    // });
 
-    //const newServiceProvider = await ServiceProvider.create({ email, password: hashedPassword });
+    const newServiceProvider = await ServiceProvider.create({ email, password: hashedPassword });
 
     // Generate a JWT token
-        const token = jwt.sign({ id: newServiceProvider.serviceProviderId }, JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ id: newServiceProvider.serviceProviderId }, JWT_SECRET, { expiresIn: '1h' });
     
         //Send the token to the client
-    res.status(201).json({ message: 'Service provider created successfully', newServiceProvider });
+    res.status(201).json({ message: 'Service provider created successfully', token });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -47,6 +47,7 @@ router.post('/signin', async (req, res) => {
   try {
     // Find the service provider by email
     const serviceProvider = await ServiceProvider.findOne({ where: { email } });
+    console.log("service provider exist");
     if (!serviceProvider) {
       return res.status(404).json({ message: 'Service provider not found' });
     }

@@ -10,7 +10,6 @@ const bookingRoutes = require('./routes/booking.routes'); // Import booking rout
 const paymentRoutes = require('./routes/payment.routes'); // Import payment routes
 const reviewRoutes = require('./routes/review.routes'); // Import review routes
 
-
 // CORS options
 const corsOptions = {
   origin: 'http://localhost:5173',  // Frontend URL
@@ -32,7 +31,6 @@ app.use('/services', serviceRoutes);
 app.use('/bookings', bookingRoutes);
 app.use('/payments', paymentRoutes);
 app.use('/reviews', reviewRoutes);
-
 
 
 // Sync database and start server
