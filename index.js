@@ -9,6 +9,7 @@ const serviceRoutes = require('./routes/service.routes'); // Import service rout
 const bookingRoutes = require('./routes/booking.routes'); // Import booking routes
 const paymentRoutes = require('./routes/payment.routes'); // Import payment routes
 const reviewRoutes = require('./routes/review.routes'); // Import review routes
+const adminRoutes = require('./routes/admin.routes'); // Import admin routes
 
 // CORS options
 const corsOptions = {
@@ -31,6 +32,8 @@ app.use('/services', serviceRoutes);
 app.use('/bookings', bookingRoutes);
 app.use('/payments', paymentRoutes);
 app.use('/reviews', reviewRoutes);
+app.use('/admin', adminRoutes);
+
 
 
 // Sync database and start server
