@@ -83,17 +83,20 @@ router.get('/profile', authenticateToken, async (req, res) => {
 
 // Profile updation route (Protected by JWT)
 router.put('/profile', authenticateToken, async (req, res) => {
-  const { fname, lname, address, latitude, longitude, locality, phone, username, aadhaar } = req.body;
+  const { 
+    fname, lname, address, latitude, longitude, locality, 
+    phone, username, aadhaar, languages, skills, 
+    experience, completedJobs 
+  } = req.body;
 
   try {
-    // Find the authenticated user by ID (from JWT token)
     const serviceProvider = await ServiceProvider.findByPk(req.user.id);
 
     if (!serviceProvider) {
-      return res.status(404).json({ message: 'serviceProvider not found' });
+      return res.status(404).json({ message: 'ServiceProvider not found' });
     }
 
-    // Update serviceProvider profile details
+    // Update basic fields
     serviceProvider.fname = fname || serviceProvider.fname;
     serviceProvider.lname = lname || serviceProvider.lname;
     serviceProvider.address = address || serviceProvider.address;
@@ -104,13 +107,17 @@ router.put('/profile', authenticateToken, async (req, res) => {
     serviceProvider.username = username || serviceProvider.username;
     serviceProvider.aadhaar = aadhaar || serviceProvider.aadhaar;
 
-    // If the serviceProvider is updating their password, hash it before saving
-    // if (password) {
-    //   serviceProvider.password = await bcrypt.hash(password, 10);
-    // }
+    // Update JSON fields
+    if (languages) serviceProvider.languages = languages;
+    if (skills) serviceProvider.skills = skills;
+    if (experience) serviceProvider.experience = experience;
+    if (completedJobs) serviceProvider.completedJobs = completedJobs;
 
     await serviceProvider.save();
-    res.status(200).json({ message: 'Profile updated successfully', serviceProvider });
+    res.status(200).json({ 
+      message: 'Profile updated successfully', 
+      serviceProvider 
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -170,6 +177,36 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     }
   } catch (error) {
     res.status(400).json({ error: error.message });
+  }
+});
+
+// Add new route to update specific JSON fields
+router.patch('/profile/fields', authenticateToken, async (req, res) => {
+  const { field, data } = req.body;
+
+  try {
+    const serviceProvider = await ServiceProvider.findByPk(req.user.id);
+
+    if (!serviceProvider) {
+      return res.status(404).json({ message: 'ServiceProvider not found' });
+    }
+
+    // Validate field name
+    const validFields = ['languages', 'skills', 'experience', 'completedJobs'];
+    if (!validFields.includes(field)) {
+      return res.status(400).json({ message: 'Invalid field name' });
+    }
+
+    // Update specific field
+    serviceProvider[field] = data;
+    await serviceProvider.save();
+
+    res.status(200).json({
+      message: `${field} updated successfully`,
+      [field]: serviceProvider[field]
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

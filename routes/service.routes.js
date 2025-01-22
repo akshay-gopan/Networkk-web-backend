@@ -40,6 +40,7 @@ router.post('/create', async (req, res) => {
       locality,
       latitude,
       longitude,
+      status: 'pending' // Set initial status
     });
 
     res.status(201).json({ message: 'Service created successfully', service: newService });
@@ -140,6 +141,28 @@ router.delete('/delete/:id', async (req, res) => {
     // Delete the service
     await service.destroy();
     res.status(200).json({ message: 'Service deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Add new status update route
+router.patch('/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!['pending', 'accepted', 'rejected'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status value' });
+    }
+
+    const service = await Service.findByPk(id);
+    if (!service) {
+      return res.status(404).json({ error: 'Service not found' });
+    }
+
+    await service.update({ status });
+    res.status(200).json({ message: 'Service status updated successfully', service });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

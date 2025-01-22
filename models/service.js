@@ -1,92 +1,3 @@
-// const { DataTypes } = require('sequelize');
-
-// module.exports = (sequelize) => {
-//   const Service = sequelize.define('Service', {
-//     serviceId: {
-//       type: DataTypes.INTEGER,
-//       primaryKey: true,
-//       autoIncrement: true,
-//     },
-//     title: {
-//       type: DataTypes.STRING(100),
-//       allowNull: false,
-//     },
-//     description: {
-//       type: DataTypes.TEXT,
-//       allowNull: false,
-//     },
-//     category: {
-//       type: DataTypes.STRING(50),
-//       allowNull: false,
-//     },
-//     basePrice: {
-//       type: DataTypes.FLOAT,
-//       allowNull: false,
-//     },
-//     demoPics: {
-//       type: DataTypes.JSON, // Storing an array of URLs as JSON
-//       allowNull: true,
-//     },
-//     holidays: {
-//       type: DataTypes.JSON, // Storing holidays as an array of dates
-//       allowNull: true,
-//     },
-//     isOpen: {
-//       type: DataTypes.BOOLEAN,
-//       defaultValue: true,
-//       allowNull: false,
-//     },
-//     avgRating: {
-//       type: DataTypes.FLOAT,
-//       defaultValue: 0.0,
-//     },
-//     reviewCount: {
-//       type: DataTypes.INTEGER,
-//       defaultValue: 0,
-//     },
-//     serviceProviderId: {
-//       type: DataTypes.STRING, // Matches the `serviceProviderId` format in the ServiceProvider model
-//       allowNull: false,
-//       references: {
-//         model: 'serviceProviders', // Reference the serviceProviders table
-//         key: 'serviceProviderId',
-//       },
-//       onDelete: 'CASCADE', // If a service provider is deleted, delete their services
-//     },
-//     address: {
-//       type: DataTypes.STRING(255),
-//       allowNull: false,
-//     },
-//     locality: {
-//       type: DataTypes.STRING(100),
-//       allowNull: false,
-//     },
-//     latitude: {
-//       type: DataTypes.DECIMAL(10, 7),
-//       allowNull: false,
-//     },
-//     longitude: {
-//       type: DataTypes.DECIMAL(10, 7),
-//       allowNull: false,
-//     },
-//   }, {
-//     tableName: 'services',
-//     timestamps: true, // Enable createdAt and updatedAt fields
-//   });
-
-//   // Define associations
-//   Service.associate = (models) => {
-//     // A service belongs to a single service provider
-//     Service.belongsTo(models.ServiceProvider, {
-//       foreignKey: 'serviceProviderId',
-//       as: 'serviceProvider',
-//     });
-//   };
-
-//   return Service;
-// };
-
-
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
@@ -156,6 +67,11 @@ module.exports = (sequelize) => {
     longitude: {
       type: DataTypes.DECIMAL(10, 7),
       allowNull: true, // Automatically filled from ServiceProvider
+    },
+    status: {
+      type: DataTypes.ENUM('pending', 'accepted', 'rejected'),
+      defaultValue: 'pending',
+      allowNull: false
     },
   }, {
     tableName: 'services',

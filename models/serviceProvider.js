@@ -54,6 +54,22 @@ module.exports = (sequelize) => {
     password: {
       type: DataTypes.STRING(255),
       allowNull: false,
+    },
+    languages: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
+    skills: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
+    experience: {
+      type: DataTypes.DECIMAL(10, 7),
+      allowNull: true,
+    },
+    completedJobs: {
+      type: DataTypes.JSON,
+      allowNull: true,
     }
   }, {
     timestamps: true, // Enable createdAt and updatedAt fields
@@ -108,4 +124,3 @@ module.exports = (sequelize) => {
 
   return ServiceProvider;
 };
-
