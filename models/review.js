@@ -6,9 +6,8 @@ module.exports = (sequelize) => {
     'Review',
     {
       reviewId: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.STRING,
         primaryKey: true,
-        autoIncrement: true, // Automatically generate IDs
       },
       serviceId: {
         type: DataTypes.STRING,
@@ -53,7 +52,7 @@ module.exports = (sequelize) => {
     {
       tableName: 'reviews',
       timestamps: true, // Enable createdAt and updatedAt fields
-      hook: {
+      hooks: {
         // Generate "RVXX" format for reviewId
         beforeCreate: async (review, options) => {
           const lastReview = await Review.findOne({

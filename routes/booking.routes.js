@@ -4,7 +4,19 @@ const router = express.Router();
 
 // Create a new booking
 router.post('/create', async (req, res) => {
-  const { bookingStatus, paymentStatus, basePayment, description, extraPayment, isReview, serviceId, userId, serviceProviderId } = req.body;
+  const { 
+    bookingStatus, 
+    paymentStatus, 
+    basePayment, 
+    description, 
+    extraPayment, 
+    isReview, 
+    serviceId, 
+    userId, 
+    serviceProviderId,
+    bookingDate,
+    bookingTime 
+  } = req.body;
 
   try {
     // Create a new booking entry
@@ -18,6 +30,8 @@ router.post('/create', async (req, res) => {
       serviceId,
       userId,
       serviceProviderId,
+      bookingDate,
+      bookingTime
     });
 
     res.status(201).json({ message: 'Booking created successfully', booking: newBooking });
@@ -71,11 +85,29 @@ router.get('/:id', async (req, res) => {
 // Update a booking
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { bookingStatus, paymentStatus, basePayment, description, extraPayment, isReview } = req.body;
+  const { 
+    bookingStatus, 
+    paymentStatus, 
+    basePayment, 
+    description, 
+    extraPayment, 
+    isReview,
+    bookingDate,
+    bookingTime 
+  } = req.body;
 
   try {
     const [updated] = await Booking.update(
-      { bookingStatus, paymentStatus, basePayment, description, extraPayment, isReview },
+      { 
+        bookingStatus, 
+        paymentStatus, 
+        basePayment, 
+        description, 
+        extraPayment, 
+        isReview,
+        bookingDate,
+        bookingTime 
+      },
       { where: { bookingId: id } }
     );
 

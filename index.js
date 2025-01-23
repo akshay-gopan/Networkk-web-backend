@@ -25,7 +25,6 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 
-// Use the user routes
 app.use('/users', userRoutes);
 app.use('/serviceProviders', serviceProviderRoutes);
 app.use('/services', serviceRoutes);

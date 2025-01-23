@@ -11,7 +11,7 @@ module.exports = (sequelize) => {
       allowNull: false,
     },
     bookingStatus: {
-      type: DataTypes.ENUM('pending', 'confirmed', 'completed', 'cancelled'),
+      type: DataTypes.ENUM('pending', 'confirmed', 'completed', 'cancelled', 'rejected'),
       defaultValue: 'pending',
       allowNull: false,
     },
@@ -45,6 +45,14 @@ module.exports = (sequelize) => {
     userLocality: {
       type: DataTypes.STRING(100),
       allowNull: true, // Dynamically filled from the User table
+    },
+    bookingDate: {
+      type: DataTypes.DATE,
+      allowNull: false
+    },
+    bookingTime: {
+      type: DataTypes.TIME,
+      allowNull: false
     },
   }, {
     tableName: 'bookings',

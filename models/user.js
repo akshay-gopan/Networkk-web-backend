@@ -61,6 +61,10 @@ module.exports = (sequelize) => {
       validate: {
         len: [4, 100], // Password must be between 6 and 100 characters
       },
+    },
+    favorites: {
+      type: DataTypes.JSON,
+      allowNull: true,
     }
   }, {
     timestamps: true,  // Enable createdAt and updatedAt

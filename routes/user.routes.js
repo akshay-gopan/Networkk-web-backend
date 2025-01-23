@@ -144,7 +144,61 @@ router.get('/d/me', authenticateToken, async (req, res) => {
   }
 });
 
+// Add favorite service/provider
+router.post('/favorites', authenticateToken, async (req, res) => {
+  const { type, id } = req.body; // type can be 'services' or 'providers'
+  
+  try {
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
+    const favorites = user.favorites || { services: [], providers: [] };
+    if (!favorites[type].includes(id)) {
+      favorites[type].push(id);
+      await user.update({ favorites });
+    }
+
+    res.status(200).json({ message: 'Favorite added successfully', favorites });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Remove from favorites
+router.delete('/favorites', authenticateToken, async (req, res) => {
+  const { type, id } = req.body;
+  
+  try {
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const favorites = user.favorites;
+    favorites[type] = favorites[type].filter(itemId => itemId !== id);
+    await user.update({ favorites });
+
+    res.status(200).json({ message: 'Favorite removed successfully', favorites });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get user favorites
+router.get('/favorites', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json(user.favorites);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Update a user (Protected by JWT)
 router.put('/:id', authenticateToken, async (req, res) => {
