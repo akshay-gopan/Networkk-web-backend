@@ -33,7 +33,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true })); 
 
 
-// Use the user routes
 app.use('/users', userRoutes);
 app.use('/serviceProviders', serviceProviderRoutes);
 app.use('/services', serviceRoutes);

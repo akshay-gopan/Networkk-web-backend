@@ -64,8 +64,8 @@ router.get('/:id', async (req, res) => {
       include: [
         { model: Booking, as: 'booking' },
         { model: Service, as: 'service' },
-        { model: User, as: 'user' },
-      ],
+        { model: User, as: 'user' }
+      ]
     });
 
     if (!review) {
@@ -85,18 +85,19 @@ router.put('/:id', async (req, res) => {
 
   try {
     const review = await Review.findByPk(id);
-
     if (!review) {
       return res.status(404).json({ error: 'Review not found' });
     }
 
-    // Update the review fields
-    review.description = description || review.description;
-    review.rating = rating || review.rating;
+    await review.update({
+      description: description || review.description,
+      rating: rating || review.rating
+    });
 
-    await review.save();
-
-    res.status(200).json({ message: 'Review updated successfully', review });
+    res.status(200).json({ 
+      message: 'Review updated successfully', 
+      review 
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -107,14 +108,12 @@ router.delete('/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
-    const deleted = await Review.destroy({
-      where: { reviewId: id },
-    });
-
-    if (!deleted) {
+    const review = await Review.findByPk(id);
+    if (!review) {
       return res.status(404).json({ error: 'Review not found' });
     }
 
+    await review.destroy();
     res.status(200).json({ message: 'Review deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
