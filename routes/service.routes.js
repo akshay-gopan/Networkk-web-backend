@@ -1,4 +1,6 @@
 const express = require('express');
+const Sequelize = require('sequelize');
+const sequelize = require('../config/sequelize.config');
 const router = express.Router();
 const { Service, ServiceProvider } = require('../models'); // Import models
 const multer = require('multer');
@@ -61,6 +63,8 @@ const MINIO_PUBLIC_ENDPOINT = 'http://127.0.0.1:9001';
 
 
 router.post('/create', upload.array('images', 5), async (req, res) => {
+  const transaction = await sequelize.transaction();
+
   try {
     const {
       title,
@@ -79,43 +83,56 @@ router.post('/create', upload.array('images', 5), async (req, res) => {
     // Check if the ServiceProvider exists
     const serviceProvider = await ServiceProvider.findByPk(serviceProviderId);
     if (!serviceProvider) {
+      await transaction.rollback();
       return res.status(404).json({ error: 'Service provider not found' });
     }
+
+    // Create the service first to get ID
+    const newService = await Service.create({
+      title,
+      description,
+      category,
+      basePrice,
+      serviceProviderId,
+      address,
+      locality,
+      latitude,
+      longitude,
+      holidays,
+      isOpen,
+      status: 'pending'
+    }, { transaction });
+
+    // console.log('Created Service:', newService);
+    // console.log('Service ID:', newService.id);
+    // console.log('Service Datavalues:', newService.dataValues);
+
+
+    const serviceId = newService.dataValues.serviceId;
 
     // Upload images to MinIO if present
     let imageUrls = [];
     if (req.files && req.files.length > 0) {
       imageUrls = await Promise.all(
         req.files.map(async (file) => {
-          const fileName = `${serviceProviderId}/${Date.now()}-${file.originalname}`;
+          //serviceId = newService.id;
+          const fileName = `${serviceId}/${Date.now()}-${file.originalname}`;
           
-          // Upload to work-images bucket
           await minioClient.putObject('work-images', fileName, file.buffer, {
             'Content-Type': file.mimetype
           });
 
-          // Generate permanent URL
           return `${MINIO_PUBLIC_ENDPOINT}/work-images/${fileName}`;
         })
       );
     }
 
-    // Create the service
-    const newService = await Service.create({
-      title,
-      description,
-      category,
-      basePrice,
-      demoPics: JSON.stringify(imageUrls), // Store image URLs as JSON
-      holidays,
-      isOpen,
-      serviceProviderId,
-      address,
-      locality,
-      latitude,
-      longitude,
-      status: 'pending' // Set initial status
-    });
+    // Update service with additional details and image URLs
+    await newService.update({
+      demoPics: JSON.stringify(imageUrls),
+    }, { transaction });
+
+    await transaction.commit();
 
     res.status(201).json({ 
       message: 'Service created successfully', 
@@ -123,6 +140,7 @@ router.post('/create', upload.array('images', 5), async (req, res) => {
       imageUrls: imageUrls
     });
   } catch (error) {
+    await transaction.rollback();
     console.error('Service creation error:', error);
     res.status(500).json({ error: error.message });
   }
