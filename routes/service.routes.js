@@ -1,16 +1,72 @@
 const express = require('express');
 const router = express.Router();
 const { Service, ServiceProvider } = require('../models'); // Import models
+const multer = require('multer');
+const minioClient = require('../config/minio.config')
+
+
+// Configure Multer for file handling
+const storage = multer.memoryStorage(); // Store files in memory for direct upload
+const upload = multer({ storage });
+
+const MINIO_PUBLIC_ENDPOINT = 'http://127.0.0.1:9001';
+
 
 // Create a new service
-router.post('/create', async (req, res) => {
+// router.post('/create', async (req, res) => {
+//   try {
+//     const {
+//       title,
+//       description,
+//       category,
+//       basePrice,
+//       demoPics,
+//       holidays,
+//       isOpen,
+//       serviceProviderId,
+//       address,
+//       locality,
+//       latitude,
+//       longitude,
+//     } = req.body;
+
+    // Check if the ServiceProvider exists
+    // const serviceProvider = await ServiceProvider.findByPk(serviceProviderId);
+    // if (!serviceProvider) {
+    //   return res.status(404).json({ error: 'Service provider not found' });
+    // }
+
+    // Create the service
+//     const newService = await Service.create({
+//       title,
+//       description,
+//       category,
+//       basePrice,
+//       demoPics,
+//       holidays,
+//       isOpen,
+//       serviceProviderId,
+//       address,
+//       locality,
+//       latitude,
+//       longitude,
+//       status: 'pending' // Set initial status
+//     });
+
+//     res.status(201).json({ message: 'Service created successfully', service: newService });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
+
+
+router.post('/create', upload.array('images', 5), async (req, res) => {
   try {
     const {
       title,
       description,
       category,
       basePrice,
-      demoPics,
       holidays,
       isOpen,
       serviceProviderId,
@@ -18,12 +74,30 @@ router.post('/create', async (req, res) => {
       locality,
       latitude,
       longitude,
-    } = req.body;
+    } = JSON.parse(req.body.serviceData);
 
     // Check if the ServiceProvider exists
     const serviceProvider = await ServiceProvider.findByPk(serviceProviderId);
     if (!serviceProvider) {
       return res.status(404).json({ error: 'Service provider not found' });
+    }
+
+    // Upload images to MinIO if present
+    let imageUrls = [];
+    if (req.files && req.files.length > 0) {
+      imageUrls = await Promise.all(
+        req.files.map(async (file) => {
+          const fileName = `${serviceProviderId}/${Date.now()}-${file.originalname}`;
+          
+          // Upload to work-images bucket
+          await minioClient.putObject('work-images', fileName, file.buffer, {
+            'Content-Type': file.mimetype
+          });
+
+          // Generate permanent URL
+          return `${MINIO_PUBLIC_ENDPOINT}/work-images/${fileName}`;
+        })
+      );
     }
 
     // Create the service
@@ -32,7 +106,7 @@ router.post('/create', async (req, res) => {
       description,
       category,
       basePrice,
-      demoPics,
+      demoPics: JSON.stringify(imageUrls), // Store image URLs as JSON
       holidays,
       isOpen,
       serviceProviderId,
@@ -43,8 +117,13 @@ router.post('/create', async (req, res) => {
       status: 'pending' // Set initial status
     });
 
-    res.status(201).json({ message: 'Service created successfully', service: newService });
+    res.status(201).json({ 
+      message: 'Service created successfully', 
+      service: newService,
+      imageUrls: imageUrls
+    });
   } catch (error) {
+    console.error('Service creation error:', error);
     res.status(500).json({ error: error.message });
   }
 });
