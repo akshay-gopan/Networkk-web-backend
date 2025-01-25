@@ -7,6 +7,13 @@ var minioClient = new Minio.Client({
   useSSL: false,
   accessKey: process.env.MINIO_ACCESS_KEY,
   secretKey: process.env.MINIO_SECRET_KEY,
+
+  //Cors configuration
+  cors: {
+    origin: '*',
+    methods: ['GET', 'HEAD', 'PUT', 'POST', 'DELETE'],
+    allowedHeaders: ['*']
+  }
 });
 
 
@@ -36,5 +43,20 @@ createBuckets().then(() => {
 }).catch((err) => {
   console.error('Error during bucket setup:', err.message);
 });
+
+const policy = {
+  Version: '2012-10-17',
+  Statement: [
+    {
+      Effect: 'Allow',
+      Principal: '*',
+      Action: ['s3:GetObject'],
+      Resource: [`arn:aws:s3:::work-images/*`]
+    }
+  ]
+};
+
+minioClient.setBucketPolicy('work-images', JSON.stringify(policy));
+
 
 module.exports = minioClient;

@@ -12,7 +12,7 @@ const storage = multer.memoryStorage(); // Store files in memory for direct uplo
 const upload = multer({ storage });
 
 const MINIO_PUBLIC_ENDPOINT = 'http://127.0.0.1:9001';
-
+//const MINIO_PUBLIC_ENDPOINT = 'http://localhost:9001'; // Match your MinIO setup
 
 // Create a new service
 // router.post('/create', async (req, res) => {
@@ -107,7 +107,6 @@ router.post('/create', upload.array('images', 5), async (req, res) => {
     // console.log('Service ID:', newService.id);
     // console.log('Service Datavalues:', newService.dataValues);
 
-
     const serviceId = newService.dataValues.serviceId;
 
     // Upload images to MinIO if present
@@ -115,8 +114,7 @@ router.post('/create', upload.array('images', 5), async (req, res) => {
     if (req.files && req.files.length > 0) {
       imageUrls = await Promise.all(
         req.files.map(async (file) => {
-          //serviceId = newService.id;
-          const fileName = `${serviceId}/${Date.now()}-${file.originalname}`;
+          const fileName = `${serviceProviderId}/${serviceId}/${Date.now()}-${file.originalname}`;
           
           await minioClient.putObject('work-images', fileName, file.buffer, {
             'Content-Type': file.mimetype
@@ -130,7 +128,8 @@ router.post('/create', upload.array('images', 5), async (req, res) => {
     // Update service with additional details and image URLs
     await newService.update({
       demoPics: JSON.stringify(imageUrls),
-    }, { transaction });
+    }, { where: { serviceId: newService.dataValues.serviceId },
+      transaction });
 
     await transaction.commit();
 
@@ -264,5 +263,62 @@ router.patch('/:id/status', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+router.get('/images/:serviceId', async (req, res) => {
+  try {
+    const service = await Service.findOne({ 
+      where: { serviceId: req.params.serviceId } 
+    });
+
+    const imageUrls = service.demoPics 
+      ? JSON.parse(service.demoPics) 
+      : [];
+
+    res.json({ imageUrls });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+// router.get('/images/:serviceId', async (req, res) => {
+//   try {
+//     // Find the service
+//     const service = await Service.findOne({ 
+//       where: { serviceId: req.params.serviceId } 
+//     });
+
+//     // Parse demo pics URLs
+//     const imageUrls = service.demoPics 
+//       ? JSON.parse(service.demoPics) 
+//       : [];
+
+//     // Fetch image buffers from Minio
+//     const imageBuffers = await Promise.all(imageUrls.map(async (imagePath) => {
+//       try {
+//         // Assume bucket name is 'services'
+//         const { data } = await minioClient.getObject('work-images', imagePath);
+//         return data;
+//       } catch (error) {
+//         console.error(`Error fetching image ${imagePath}:`, error);
+//         return null;
+//       }
+//     }));
+
+//     // Filter out any null results (failed image fetches)
+//     const validImageBuffers = imageBuffers.filter(buffer => buffer !== null);
+
+//     // Send image buffers to frontend
+//     res.json({ 
+//       images: validImageBuffers.map(buffer => buffer.toString('base64')) 
+//     });
+
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
+
+
+
 
 module.exports = router;
