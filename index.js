@@ -31,7 +31,7 @@ app.use('/services', serviceRoutes);
 app.use('/bookings', bookingRoutes);
 app.use('/payments', paymentRoutes);
 app.use('/reviews', reviewRoutes);
-app.use('/admin', adminRoutes);
+app.use('/admins', adminRoutes);
 
 
 
