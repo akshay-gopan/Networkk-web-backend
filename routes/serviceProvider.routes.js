@@ -81,6 +81,22 @@ router.get('/profile', authenticateToken, async (req, res) => {
   }
 });
 
+router.get('/email/:email', async (req, res) => {
+  try {
+    const { email } = req.params;
+    const provider = await ServiceProvider.findOne({
+      where: { email: email }
+    });
+    
+    if (!provider) {
+      return res.status(404).json({ message: 'Service provider not found' });
+    }
+    
+    res.status(200).json(provider);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 // Profile updation route (Protected by JWT)
 router.put('/profile', authenticateToken, async (req, res) => {
   const { 
