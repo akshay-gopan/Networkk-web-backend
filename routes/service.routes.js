@@ -11,8 +11,8 @@ const minioClient = require('../config/minio.config')
 const storage = multer.memoryStorage(); // Store files in memory for direct upload
 const upload = multer({ storage });
 
-const MINIO_PUBLIC_ENDPOINT = 'http://127.0.0.1:9001';
-//const MINIO_PUBLIC_ENDPOINT = 'http://localhost:9001'; // Match your MinIO setup
+//const MINIO_PUBLIC_ENDPOINT = 'http://127.0.0.1:9001';
+const MINIO_PUBLIC_ENDPOINT = 'http://localhost:9000'; // Match your MinIO setup
 
 // Create a new service
 // router.post('/create', async (req, res) => {
