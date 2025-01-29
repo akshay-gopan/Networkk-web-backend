@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Service, ServiceProvider } = require('../models'); // Import models
+const authenticateToken = require('../middleware/authenticateToken')
 
 // Create a new service
 router.post('/create', async (req, res) => {
@@ -165,6 +166,69 @@ router.patch('/:id/status', async (req, res) => {
     res.status(200).json({ message: 'Service status updated successfully', service });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+
+// Fetch all services with accepted status
+router.get('/accepted', authenticateToken, async (req, res) => {
+  try {
+
+    // Fetch all services with a accepted status
+    const acceptedServices = await Service.findAll({
+      where: { status: 'accepted' }, // 'status' column in the `services` table
+      order: [['createdAt', 'DESC']], // Optional: Sort by newest first
+    });
+
+    if (acceptedServices.length === 0) {
+      return res.status(404).json({ message: 'No accepted services found.' });
+    }
+
+    res.status(200).json(acceptedServices);
+  } catch (error) {
+    console.error('Error fetching accepted services:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Fetch all services with pending status
+router.get('/pending', authenticateToken, async (req, res) => {
+  try {
+
+    // Fetch all services with a pending status
+    const pendingServices = await Service.findAll({
+      where: { status: 'pending' }, // Assuming 'status' is a column in the `services` table
+      order: [['createdAt', 'DESC']], // Optional: Sort by newest first
+    });
+
+    if (pendingServices.length === 0) {
+      return res.status(404).json({ message: 'No pending services found.' });
+    }
+
+    res.status(200).json(pendingServices);
+  } catch (error) {
+    console.error('Error fetching pending services:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/rejected', authenticateToken, async (req, res) => {
+  try {
+
+    // Fetch all services with a pending status
+    const rejectedServices = await Service.findAll({
+      where: { status: 'rejected' }, // Assuming 'status' is a column in the `services` table
+      order: [['createdAt', 'DESC']], // Optional: Sort by newest first
+    });
+
+    if (rejectedServices.length === 0) {
+      return res.status(404).json({ message: 'No rejected services found.' });
+    }
+
+    res.status(200).json(rejectedServices);
+  } catch (error) {
+    console.error('Error fetching rejected services:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
