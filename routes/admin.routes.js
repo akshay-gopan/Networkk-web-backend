@@ -69,5 +69,49 @@ router.get('/pending-services', authenticateToken, async (req, res) => {
   }
 });
 
+router.put('/approve-service/:serviceId', authenticateToken, async (req, res) => {
+  try {
+    const { serviceId } = req.params;
+
+    // Check if service exists
+    const service = await Service.findByPk(serviceId);
+    
+    if (!service) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Service not found' 
+      });
+    }
+
+    // Check if service is already approved
+    if (service.status === 'accepted') {
+      return res.status(400).json({
+        success: false,
+        message: 'Service is already approved'
+      });
+    }
+
+    // Update service status
+    const updatedService = await service.update({
+      status: 'accepted',
+      //approvedAt: new Date(),
+      //approvedBy: req.admin.id  // Assuming admin ID is available in req.admin
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Service approved successfully',
+      service: updatedService
+    });
+  } catch (error) {
+    console.error('Error approving service:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
 
 module.exports = router;
