@@ -232,4 +232,48 @@ router.get('/rejected', authenticateToken, async (req, res) => {
   }
 });
 
+
+
+
+router.get('/holiday/:serviceId', async (req, res) => {
+  try {
+    const { serviceId } = req.params;
+
+    if (!serviceId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Service ID is required'
+      });
+    }
+
+    const service = await Service.findOne({
+      where: {
+        serviceId: serviceId,
+      },
+      attributes: ['holidays'] // Only fetch holidays array
+    });
+
+    if (!service) {
+      return res.status(404).json({
+        success: false,
+        message: 'Holiday not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: service.holidays
+    });
+
+  } catch (error) {
+    console.error('Error fetching holiday details:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
+
 module.exports = router;
