@@ -6,7 +6,7 @@ const authenticateToken = require('../middleware/authenticateToken'); // JWT mid
 const router = express.Router();
 
 // Load JWT secret from environment variables
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
+const JWT_SECRET = process.env.JWT_SECRET ;
 
 // Sign-up route (Create an account)
 router.post('/signup', async (req, res) => {
@@ -97,22 +97,20 @@ router.get('/email/:email', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-// Profile updation route (Protected by JWT)
+
+// Profile update route (Protected by JWT)
 router.put('/profile', authenticateToken, async (req, res) => {
-  const { 
-    fname, lname, address, latitude, longitude, locality, 
-    phone, username, aadhaar, languages, skills, 
-    experience, completedJobs 
-  } = req.body;
+  const { fname, lname, address, latitude, longitude, locality, phone, username, aadhaar } = req.body;
 
   try {
+    // Find the authenticated user by ID (from JWT token)
     const serviceProvider = await ServiceProvider.findByPk(req.user.id);
 
     if (!serviceProvider) {
-      return res.status(404).json({ message: 'ServiceProvider not found' });
+      return res.status(404).json({ message: 'User not found' });
     }
 
-    // Update basic fields
+    // Update user profile details
     serviceProvider.fname = fname || serviceProvider.fname;
     serviceProvider.lname = lname || serviceProvider.lname;
     serviceProvider.address = address || serviceProvider.address;
@@ -123,24 +121,35 @@ router.put('/profile', authenticateToken, async (req, res) => {
     serviceProvider.username = username || serviceProvider.username;
     serviceProvider.aadhaar = aadhaar || serviceProvider.aadhaar;
 
-    // Update JSON fields
-    if (languages) serviceProvider.languages = languages;
-    if (skills) serviceProvider.skills = skills;
-    if (experience) serviceProvider.experience = experience;
-    if (completedJobs) serviceProvider.completedJobs = completedJobs;
+    // If the user is updating their password, hash it before saving
+    // if (password) {
+    //   user.password = await bcrypt.hash(password, 10);
+    // }
 
     await serviceProvider.save();
-    res.status(200).json({ 
-      message: 'Profile updated successfully', 
-      serviceProvider 
-    });
+    res.status(200).json({ message: 'Profile updated successfully', serviceProvider });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
+//Fetch the current user (Protected by JWT)
+router.get('/d/me', authenticateToken, async (req, res) => {
+  
+  try {
+    const serviceProvider = await ServiceProvider.findByPk(req.user.id); // Fetch serviceProvider by ID
+    console.log("User:", serviceProvider); // Debug log
+    if (serviceProvider) {
+      res.status(200).json(serviceProvider);
+    } else {
+      res.status(404).json({ error: 'User not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 // Get all service providers (no authentication needed)
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
     const serviceProviders = await ServiceProvider.findAll();
     res.status(200).json(serviceProviders);
@@ -193,36 +202,6 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     }
   } catch (error) {
     res.status(400).json({ error: error.message });
-  }
-});
-
-// Add new route to update specific JSON fields
-router.patch('/profile/fields', authenticateToken, async (req, res) => {
-  const { field, data } = req.body;
-
-  try {
-    const serviceProvider = await ServiceProvider.findByPk(req.user.id);
-
-    if (!serviceProvider) {
-      return res.status(404).json({ message: 'ServiceProvider not found' });
-    }
-
-    // Validate field name
-    const validFields = ['languages', 'skills', 'experience', 'completedJobs'];
-    if (!validFields.includes(field)) {
-      return res.status(400).json({ message: 'Invalid field name' });
-    }
-
-    // Update specific field
-    serviceProvider[field] = data;
-    await serviceProvider.save();
-
-    res.status(200).json({
-      message: `${field} updated successfully`,
-      [field]: serviceProvider[field]
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
   }
 });
 
