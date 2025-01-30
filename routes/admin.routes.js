@@ -44,35 +44,6 @@ router.post('/signin', async (req, res) => {
 });
 
 
-// Fetch all services with pending status
-router.get('/pending-services', authenticateToken, async (req, res) => {
-  try {
-    // Ensure only admins can access this route (optional, if roles are implemented)
-    // if (req.user.role !== 'admin') {
-    //   return res.status(403).json({ error: 'Access denied. Only admins can view this resource.' });
-    // }
-
-    // Fetch all services with a pending status
-    const pendingServices = await Service.findAll({
-      where: { status: 'pending' }, // Assuming 'status' is a column in the `services` table
-      order: [['createdAt', 'DESC']], // Optional: Sort by newest first
-    });
-
-    if (pendingServices.length === 0) {
-      return res.status(404).json({ message: 'No pending services found.' });
-    }
-
-    res.status(200).json(pendingServices);
-  } catch (error) {
-    console.error('Error fetching pending services:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-
-
-
-
 router.put('/approve-service/:serviceId', authenticateToken, async (req, res) => {
   try {
     const { serviceId } = req.params;
@@ -117,5 +88,48 @@ router.put('/approve-service/:serviceId', authenticateToken, async (req, res) =>
   }
 });
 
+
+
+router.put('/reject-service/:serviceId', authenticateToken, async (req, res) => {
+  try {
+    const { serviceId } = req.params;
+
+    // Check if service exists
+    const service = await Service.findByPk(serviceId);
+    
+    if (!service) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Service not found' 
+      });
+    }
+
+    // Check if service is already approved
+    if (service.status === 'rejected') {
+      return res.status(400).json({
+        success: false,
+        message: 'Service is already rejected'
+      });
+    }
+
+    // Update service status
+    const updatedService = await service.update({
+      status: 'rejected',
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Service was rejected',
+      service: updatedService
+    });
+  } catch (error) {
+    console.error('Error rejecting service:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
 
 module.exports = router;
