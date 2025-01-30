@@ -128,6 +128,20 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get services by provider ID
+router.get('/provider/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const services = await Service.findAll({
+      where: { serviceProviderId: id },
+      include: [{ model: ServiceProvider, as: 'serviceProvider' }],
+    });
+    res.status(200).json(services);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Delete a service
 router.delete('/delete/:id', async (req, res) => {
   try {

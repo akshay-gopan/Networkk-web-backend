@@ -10,6 +10,8 @@ npm-debug.log*
 .env
 config.js
 
+config.json
+
 # Build outputs
 dist/
 build/
