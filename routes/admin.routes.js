@@ -132,4 +132,44 @@ router.put('/reject-service/:serviceId', authenticateToken, async (req, res) => 
   }
 });
 
+// Add new status update endpoint
+router.put('/services/:serviceId/status', authenticateToken, async (req, res) => {
+  try {
+    const { serviceId } = req.params;
+    const { status } = req.body;
+
+    if (!['pending', 'accepted', 'rejected'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status value'
+      });
+    }
+
+    const service = await Service.findByPk(serviceId);
+    
+    if (!service) {
+      return res.status(404).json({
+        success: false,
+        message: 'Service not found'
+      });
+    }
+
+    const updatedService = await service.update({ status });
+
+    res.status(200).json({
+      success: true,
+      message: `Service ${status} successfully`,
+      service: updatedService
+    });
+
+  } catch (error) {
+    console.error('Error updating service status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
