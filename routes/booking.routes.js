@@ -15,7 +15,7 @@ router.post('/create', async (req, res) => {
     userId, 
     serviceProviderId,
     bookingDate,
-    bookingTime 
+    bookingTime
   } = req.body;
 
   try {
@@ -31,7 +31,7 @@ router.post('/create', async (req, res) => {
       userId,
       serviceProviderId,
       bookingDate,
-      bookingTime
+      bookingTime,
     });
 
     res.status(201).json({ message: 'Booking created successfully', booking: newBooking });

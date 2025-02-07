@@ -13,6 +13,7 @@ const upload = multer({ storage });
 
 //const MINIO_PUBLIC_ENDPOINT = 'http://127.0.0.1:9001';
 const MINIO_PUBLIC_ENDPOINT = 'http://localhost:9000'; // Match your MinIO setup
+const authenticateToken = require('../middleware/authenticateToken')
 
 // Create a new service
 // router.post('/create', async (req, res) => {
@@ -223,6 +224,20 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get services by provider ID
+router.get('/provider/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const services = await Service.findAll({
+      where: { serviceProviderId: id },
+      include: [{ model: ServiceProvider, as: 'serviceProvider' }],
+    });
+    res.status(200).json(services);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Delete a service
 router.delete('/delete/:id', async (req, res) => {
   try {
@@ -263,6 +278,113 @@ router.patch('/:id/status', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+
+// Fetch all services with accepted status
+router.get('/accepted', authenticateToken, async (req, res) => {
+  try {
+
+    // Fetch all services with a accepted status
+    const acceptedServices = await Service.findAll({
+      where: { status: 'accepted' }, // 'status' column in the `services` table
+      order: [['createdAt', 'DESC']], // Optional: Sort by newest first
+    });
+
+    if (acceptedServices.length === 0) {
+      return res.status(404).json({ message: 'No accepted services found.' });
+    }
+
+    res.status(200).json(acceptedServices);
+  } catch (error) {
+    console.error('Error fetching accepted services:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Fetch all services with pending status
+router.get('/pending', authenticateToken, async (req, res) => {
+  try {
+
+    // Fetch all services with a pending status
+    const pendingServices = await Service.findAll({
+      where: { status: 'pending' }, // Assuming 'status' is a column in the `services` table
+      order: [['createdAt', 'DESC']], // Optional: Sort by newest first
+    });
+
+    if (pendingServices.length === 0) {
+      return res.status(404).json({ message: 'No pending services found.' });
+    }
+
+    res.status(200).json(pendingServices);
+  } catch (error) {
+    console.error('Error fetching pending services:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/rejected', authenticateToken, async (req, res) => {
+  try {
+
+    // Fetch all services with a pending status
+    const rejectedServices = await Service.findAll({
+      where: { status: 'rejected' }, // Assuming 'status' is a column in the `services` table
+      order: [['createdAt', 'DESC']], // Optional: Sort by newest first
+    });
+
+    if (rejectedServices.length === 0) {
+      return res.status(404).json({ message: 'No rejected services found.' });
+    }
+
+    res.status(200).json(rejectedServices);
+  } catch (error) {
+    console.error('Error fetching rejected services:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
+
+
+router.get('/holiday/:serviceId', async (req, res) => {
+  try {
+    const { serviceId } = req.params;
+
+    if (!serviceId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Service ID is required'
+      });
+    }
+
+    const service = await Service.findOne({
+      where: {
+        serviceId: serviceId,
+      },
+      attributes: ['holidays'] // Only fetch holidays array
+    });
+
+    if (!service) {
+      return res.status(404).json({
+        success: false,
+        message: 'Holiday not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: service.holidays
+    });
+
+  } catch (error) {
+    console.error('Error fetching holiday details:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
 
 router.get('/images/:serviceId', async (req, res) => {
   try {
