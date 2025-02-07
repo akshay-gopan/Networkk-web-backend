@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
+require('./config/minio.config'); // Import Minio configuration
 require('dotenv').config(); // Import dotenv module to access .env file
 const db = require('./models'); // Import models
 const userRoutes = require('./routes/user.routes'); // Import user routes
@@ -10,6 +11,10 @@ const bookingRoutes = require('./routes/booking.routes'); // Import booking rout
 const paymentRoutes = require('./routes/payment.routes'); // Import payment routes
 const reviewRoutes = require('./routes/review.routes'); // Import review routes
 const adminRoutes = require('./routes/admin.routes'); // Import admin routes
+const minioUploadRoutes = require('./minio/upload.routes'); // Import MinIO upload routes
+const minioDownloadRoutes = require('./minio/download.routes'); // Import MinIO download routes
+
+
 
 // CORS options
 const corsOptions = {
@@ -24,6 +29,9 @@ app.use(cors(corsOptions));
 // Middleware to parse JSON requests
 app.use(express.json());
 
+// Parse URL-encoded requests
+app.use(express.urlencoded({ extended: true })); 
+
 
 app.use('/users', userRoutes);
 app.use('/serviceProviders', serviceProviderRoutes);
@@ -31,7 +39,10 @@ app.use('/services', serviceRoutes);
 app.use('/bookings', bookingRoutes);
 app.use('/payments', paymentRoutes);
 app.use('/reviews', reviewRoutes);
-app.use('/admins', adminRoutes);
+app.use('/admin', adminRoutes);
+app.use('/upload', minioUploadRoutes);
+app.use('/download', minioDownloadRoutes);
+
 
 
 

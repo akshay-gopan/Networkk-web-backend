@@ -1,17 +1,77 @@
 const express = require('express');
+const Sequelize = require('sequelize');
+const sequelize = require('../config/sequelize.config');
 const router = express.Router();
 const { Service, ServiceProvider } = require('../models'); // Import models
+const multer = require('multer');
+const minioClient = require('../config/minio.config')
+
+
+// Configure Multer for file handling
+const storage = multer.memoryStorage(); // Store files in memory for direct upload
+const upload = multer({ storage });
+
+//const MINIO_PUBLIC_ENDPOINT = 'http://127.0.0.1:9001';
+const MINIO_PUBLIC_ENDPOINT = 'http://localhost:9000'; // Match your MinIO setup
 const authenticateToken = require('../middleware/authenticateToken')
 
 // Create a new service
-router.post('/create', async (req, res) => {
+// router.post('/create', async (req, res) => {
+//   try {
+//     const {
+//       title,
+//       description,
+//       category,
+//       basePrice,
+//       demoPics,
+//       holidays,
+//       isOpen,
+//       serviceProviderId,
+//       address,
+//       locality,
+//       latitude,
+//       longitude,
+//     } = req.body;
+
+    // Check if the ServiceProvider exists
+    // const serviceProvider = await ServiceProvider.findByPk(serviceProviderId);
+    // if (!serviceProvider) {
+    //   return res.status(404).json({ error: 'Service provider not found' });
+    // }
+
+    // Create the service
+//     const newService = await Service.create({
+//       title,
+//       description,
+//       category,
+//       basePrice,
+//       demoPics,
+//       holidays,
+//       isOpen,
+//       serviceProviderId,
+//       address,
+//       locality,
+//       latitude,
+//       longitude,
+//       status: 'pending' // Set initial status
+//     });
+
+//     res.status(201).json({ message: 'Service created successfully', service: newService });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
+
+
+router.post('/create', upload.array('images', 5), async (req, res) => {
+  const transaction = await sequelize.transaction();
+
   try {
     const {
       title,
       description,
       category,
       basePrice,
-      demoPics,
       holidays,
       isOpen,
       serviceProviderId,
@@ -19,33 +79,69 @@ router.post('/create', async (req, res) => {
       locality,
       latitude,
       longitude,
-    } = req.body;
+    } = JSON.parse(req.body.serviceData);
 
     // Check if the ServiceProvider exists
     const serviceProvider = await ServiceProvider.findByPk(serviceProviderId);
     if (!serviceProvider) {
+      await transaction.rollback();
       return res.status(404).json({ error: 'Service provider not found' });
     }
 
-    // Create the service
+    // Create the service first to get ID
     const newService = await Service.create({
       title,
       description,
       category,
       basePrice,
-      demoPics,
-      holidays,
-      isOpen,
       serviceProviderId,
       address,
       locality,
       latitude,
       longitude,
-      status: 'pending' // Set initial status
-    });
+      holidays,
+      isOpen,
+      status: 'pending'
+    }, { transaction });
 
-    res.status(201).json({ message: 'Service created successfully', service: newService });
+    // console.log('Created Service:', newService);
+    // console.log('Service ID:', newService.id);
+    // console.log('Service Datavalues:', newService.dataValues);
+
+    const serviceId = newService.dataValues.serviceId;
+
+    // Upload images to MinIO if present
+    let imageUrls = [];
+    if (req.files && req.files.length > 0) {
+      imageUrls = await Promise.all(
+        req.files.map(async (file) => {
+          const fileName = `${serviceProviderId}/${serviceId}/${Date.now()}-${file.originalname}`;
+          
+          await minioClient.putObject('work-images', fileName, file.buffer, {
+            'Content-Type': file.mimetype
+          });
+
+          return `${MINIO_PUBLIC_ENDPOINT}/work-images/${fileName}`;
+        })
+      );
+    }
+
+    // Update service with additional details and image URLs
+    await newService.update({
+      demoPics: JSON.stringify(imageUrls),
+    }, { where: { serviceId: newService.dataValues.serviceId },
+      transaction });
+
+    await transaction.commit();
+
+    res.status(201).json({ 
+      message: 'Service created successfully', 
+      service: newService,
+      imageUrls: imageUrls
+    });
   } catch (error) {
+    await transaction.rollback();
+    console.error('Service creation error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -288,6 +384,63 @@ router.get('/holiday/:serviceId', async (req, res) => {
     });
   }
 });
+
+
+router.get('/images/:serviceId', async (req, res) => {
+  try {
+    const service = await Service.findOne({ 
+      where: { serviceId: req.params.serviceId } 
+    });
+
+    const imageUrls = service.demoPics 
+      ? JSON.parse(service.demoPics) 
+      : [];
+
+    res.json({ imageUrls });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+// router.get('/images/:serviceId', async (req, res) => {
+//   try {
+//     // Find the service
+//     const service = await Service.findOne({ 
+//       where: { serviceId: req.params.serviceId } 
+//     });
+
+//     // Parse demo pics URLs
+//     const imageUrls = service.demoPics 
+//       ? JSON.parse(service.demoPics) 
+//       : [];
+
+//     // Fetch image buffers from Minio
+//     const imageBuffers = await Promise.all(imageUrls.map(async (imagePath) => {
+//       try {
+//         // Assume bucket name is 'services'
+//         const { data } = await minioClient.getObject('work-images', imagePath);
+//         return data;
+//       } catch (error) {
+//         console.error(`Error fetching image ${imagePath}:`, error);
+//         return null;
+//       }
+//     }));
+
+//     // Filter out any null results (failed image fetches)
+//     const validImageBuffers = imageBuffers.filter(buffer => buffer !== null);
+
+//     // Send image buffers to frontend
+//     res.json({ 
+//       images: validImageBuffers.map(buffer => buffer.toString('base64')) 
+//     });
+
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
+
+
 
 
 module.exports = router;
