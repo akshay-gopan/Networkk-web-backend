@@ -67,6 +67,7 @@ router.post('/create', upload.array('images', 5), async (req, res) => {
   const transaction = await sequelize.transaction();
 
   try {
+    console.log('Service Data:', req.body.serviceData);
     const {
       title,
       description,
@@ -80,6 +81,7 @@ router.post('/create', upload.array('images', 5), async (req, res) => {
       latitude,
       longitude,
     } = JSON.parse(req.body.serviceData);
+    
 
     // Check if the ServiceProvider exists
     const serviceProvider = await ServiceProvider.findByPk(serviceProviderId);
@@ -106,9 +108,10 @@ router.post('/create', upload.array('images', 5), async (req, res) => {
 
     // console.log('Created Service:', newService);
     // console.log('Service ID:', newService.id);
-    // console.log('Service Datavalues:', newService.dataValues);
+    //console.log('Service Datavalues:', newService.dataValues);
 
     const serviceId = newService.dataValues.serviceId;
+    
 
     // Upload images to MinIO if present
     let imageUrls = [];
