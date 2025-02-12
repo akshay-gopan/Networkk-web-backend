@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const { Admin, Service, ServiceProvider } = require('../models'); // Replace with the correct path to your Admin model
 const router = express.Router();
 const authenticateToken = require('../middleware/authenticateToken'); // Import JWT middleware
-const { sendServiceApprovalEmail } = require('../utils/emailService');
+const { sendServiceApprovalEmail, sendServiceRejectionEmail } = require('../utils/emailService');
 
 // Load JWT secret from environment variables
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -137,7 +137,7 @@ router.put('/reject-service/:serviceId', authenticateToken, async (req, res) => 
 router.put('/services/:serviceId/status', authenticateToken, async (req, res) => {
   try {
     const { serviceId } = req.params;
-    const { status } = req.body;
+    const { status, rejectionReason } = req.body;
 
     if (!['pending', 'accepted', 'rejected'].includes(status)) {
       return res.status(400).json({
@@ -157,20 +157,25 @@ router.put('/services/:serviceId/status', authenticateToken, async (req, res) =>
 
     const updatedService = await service.update({ status });
 
-    // Send email notification if service is accepted
-    if (status === 'accepted') {
+    // Fetch service provider details to get email
+    const serviceProvider = await ServiceProvider.findByPk(service.serviceProviderId);
+    
+    if (serviceProvider && serviceProvider.email) {
       try {
-        // Fetch service provider details to get email
-        const serviceProvider = await ServiceProvider.findByPk(service.serviceProviderId);
-        
-        if (serviceProvider && serviceProvider.email) {
+        if (status === 'accepted') {
           await sendServiceApprovalEmail(
             serviceProvider.email,
             service.title
           );
+        } else if (status === 'rejected') {
+          await sendServiceRejectionEmail(
+            serviceProvider.email,
+            service.title,
+            rejectionReason
+          );
         }
       } catch (emailError) {
-        console.error('Error sending approval email:', emailError);
+        console.error('Error sending email:', emailError);
         // Continue with the response even if email fails
       }
     }

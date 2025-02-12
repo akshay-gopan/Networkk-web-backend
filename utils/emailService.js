@@ -32,6 +32,32 @@ const sendServiceApprovalEmail = async (providerEmail, serviceName) => {
   }
 };
 
+const sendServiceRejectionEmail = async (providerEmail, serviceName, rejectionReason = '') => {
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: providerEmail,
+    subject: 'Service Status Update - Rejected',
+    html: `
+      <h1>Service Status Update</h1>
+      <p>We regret to inform you that your service "${serviceName}" has been Rejected at this time.</p>
+      ${rejectionReason ? `<p>Reason: ${rejectionReason}</p>` : ''}
+      <p>If you would like to submit a revised service proposal or have any questions, please don't hesitate to contact us.</p>
+      <br>
+      <p>Best regards,</p>
+      <p>The Networkk Team</p>
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log('Rejection email sent successfully');
+  } catch (error) {
+    console.error('Error sending rejection email:', error);
+    throw error;
+  }
+};
+
 module.exports = {
-  sendServiceApprovalEmail
+  sendServiceApprovalEmail,
+  sendServiceRejectionEmail
 };
