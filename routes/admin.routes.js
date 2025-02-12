@@ -1,9 +1,10 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { Admin, Service } = require('../models'); // Replace with the correct path to your Admin model
+const { Admin, Service, ServiceProvider } = require('../models'); // Replace with the correct path to your Admin model
 const router = express.Router();
 const authenticateToken = require('../middleware/authenticateToken'); // Import JWT middleware
+const emailService = require('../services/emailService');
 
 // Load JWT secret from environment variables
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -69,13 +70,17 @@ router.put('/approve-service/:serviceId', authenticateToken, async (req, res) =>
     // Update service status
     const updatedService = await service.update({
       status: 'accepted',
-      //approvedAt: new Date(),
-      //approvedBy: req.admin.id  // Assuming admin ID is available in req.admin
     });
+
+    await emailService.sendServiceApprovalEmail({
+      email: service.serviceProvider.email,
+      name: service.serviceProvider.name,
+      serviceName: service.title
+  });
 
     res.status(200).json({
       success: true,
-      message: 'Service approved successfully',
+      message: 'Service approved successfully and notification sent',
       service: updatedService
     });
   } catch (error) {
