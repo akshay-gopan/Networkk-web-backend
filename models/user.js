@@ -62,6 +62,11 @@ module.exports = (sequelize) => {
         len: [4, 100], // Password must be between 6 and 100 characters
       },
     },
+    profile_picture: {
+      type: DataTypes.STRING, // Store the image URL
+      allowNull: true,
+    },
+
     favorites: {
       type: DataTypes.JSON,
       allowNull: true,
