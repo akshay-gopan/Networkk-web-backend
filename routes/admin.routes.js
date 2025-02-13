@@ -1,9 +1,10 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { Admin, Service } = require('../models'); // Replace with the correct path to your Admin model
+const { Admin, Service, ServiceProvider } = require('../models'); // Replace with the correct path to your Admin model
 const router = express.Router();
 const authenticateToken = require('../middleware/authenticateToken'); // Import JWT middleware
+const { sendServiceApprovalEmail, sendServiceRejectionEmail } = require('../utils/emailService');
 
 // Load JWT secret from environment variables
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -132,11 +133,11 @@ router.put('/reject-service/:serviceId', authenticateToken, async (req, res) => 
   }
 });
 
-// Add new status update endpoint
+// Update the services status endpoint to include email notification
 router.put('/services/:serviceId/status', authenticateToken, async (req, res) => {
   try {
     const { serviceId } = req.params;
-    const { status } = req.body;
+    const { status, rejectionReason } = req.body;
 
     if (!['pending', 'accepted', 'rejected'].includes(status)) {
       return res.status(400).json({
@@ -155,6 +156,29 @@ router.put('/services/:serviceId/status', authenticateToken, async (req, res) =>
     }
 
     const updatedService = await service.update({ status });
+
+    // Fetch service provider details to get email
+    const serviceProvider = await ServiceProvider.findByPk(service.serviceProviderId);
+    
+    if (serviceProvider && serviceProvider.email) {
+      try {
+        if (status === 'accepted') {
+          await sendServiceApprovalEmail(
+            serviceProvider.email,
+            service.title
+          );
+        } else if (status === 'rejected') {
+          await sendServiceRejectionEmail(
+            serviceProvider.email,
+            service.title,
+            rejectionReason
+          );
+        }
+      } catch (emailError) {
+        console.error('Error sending email:', emailError);
+        // Continue with the response even if email fails
+      }
+    }
 
     res.status(200).json({
       success: true,
