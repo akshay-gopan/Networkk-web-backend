@@ -70,6 +70,36 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Add this new route to get bookings for a specific service provider
+router.get('/provider', async (req, res) => {
+  try {
+    const { serviceProviderId } = req.query;
+    
+    if (!serviceProviderId) {
+      return res.status(400).json({ error: 'serviceProviderId is required' });
+    }
+
+    const bookings = await Booking.findAll({
+      where: { serviceProviderId: serviceProviderId },
+      include: [
+        { model: Service, as: 'service' },
+        { model: User, as: 'user' },
+        { model: ServiceProvider, as: 'serviceProvider' },
+        { model: Payment, as: 'payment' },
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.status(200).json(bookings);
+  } catch (error) {
+    console.error('Error fetching bookings:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch bookings',
+      details: error.message 
+    });
+  }
+});
+
 // Get a specific booking by ID
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
