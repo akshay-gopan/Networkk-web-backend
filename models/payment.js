@@ -73,7 +73,6 @@ module.exports = (sequelize) => {
     }
   );
 
-  // Define associations
   Payment.associate = (models) => {
     Payment.belongsTo(models.Booking, {
       foreignKey: 'bookingId',

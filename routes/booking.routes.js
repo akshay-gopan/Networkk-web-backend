@@ -1,5 +1,5 @@
 const express = require('express');
-const { Booking, Service, User, ServiceProvider, Payment } = require('../models'); // Import models
+const { Booking, Service, User, ServiceProvider, Payment } = require('../models');
 const router = express.Router();
 
 // Create a new booking
@@ -40,21 +40,33 @@ router.post('/create', async (req, res) => {
   }
 });
 
-// Get all bookings
+// Get bookings for a specific user
 router.get('/', async (req, res) => {
   try {
+    const { userId } = req.query;
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+
     const bookings = await Booking.findAll({
+      where: { userId: userId },
       include: [
         { model: Service, as: 'service' },
         { model: User, as: 'user' },
         { model: ServiceProvider, as: 'serviceProvider' },
         { model: Payment, as: 'payment' },
       ],
+      order: [['createdAt', 'DESC']] // Most recent bookings first
     });
 
     res.status(200).json(bookings);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error fetching bookings:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch bookings',
+      details: error.message 
+    });
   }
 });
 
