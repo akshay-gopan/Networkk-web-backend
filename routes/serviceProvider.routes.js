@@ -4,9 +4,17 @@ const jwt = require('jsonwebtoken');
 const { ServiceProvider } = require('../models'); // Import your ServiceProvider model
 const authenticateToken = require('../middleware/authenticateToken'); // JWT middleware
 const router = express.Router();
+const multer = require('multer');
+const minioClient = require('../config/minio.config')
 
 // Load JWT secret from environment variables
 const JWT_SECRET = process.env.JWT_SECRET ;
+
+// Configure Multer for file handling
+const storage = multer.memoryStorage(); // Store files in memory for direct upload
+const upload = multer({ storage });
+const MINIO_PUBLIC_ENDPOINT = 'http://localhost:9000'; // Match your MinIO setup
+
 
 // Sign-up route (Create an account)
 router.post('/signup', async (req, res) => {
@@ -99,37 +107,78 @@ router.get('/email/:email', async (req, res) => {
 });
 
 // Profile update route (Protected by JWT)
-router.put('/profile', authenticateToken, async (req, res) => {
-  const { fname, lname, address, latitude, longitude, locality, phone, username, aadhaar } = req.body;
-
+router.put('/profile', authenticateToken, upload.single('profilePicture'), async (req, res) => {
   try {
-    // Find the authenticated user by ID (from JWT token)
+    const { fname, lname, address, latitude, longitude, locality, phone, username, aadhaar } = req.body;
     const serviceProvider = await ServiceProvider.findByPk(req.user.id);
 
     if (!serviceProvider) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Update user profile details
-    serviceProvider.fname = fname || serviceProvider.fname;
-    serviceProvider.lname = lname || serviceProvider.lname;
-    serviceProvider.address = address || serviceProvider.address;
-    serviceProvider.latitude = latitude || serviceProvider.latitude;
-    serviceProvider.longitude = longitude || serviceProvider.longitude;
-    serviceProvider.locality = locality || serviceProvider.locality;
-    serviceProvider.phone = phone || serviceProvider.phone;
-    serviceProvider.username = username || serviceProvider.username;
-    serviceProvider.aadhaar = aadhaar || serviceProvider.aadhaar;
+    let profilePictureUrl = serviceProvider.profilePicture;
 
-    // If the user is updating their password, hash it before saving
-    // if (password) {
-    //   user.password = await bcrypt.hash(password, 10);
-    // }
+    // Handle image upload if file exists
+    if (req.file) {
+      try {
+        // Create unique filename
+        const fileName = `serviceProviders/${req.user.id}/${Date.now()}.${req.file.originalname.split('.').pop()}`;
+        
+        // Check and create bucket
+        const bucketExists = await minioClient.bucketExists('profile-pictures');
+        console.log("Bucket exists:", bucketExists);
+        if (!bucketExists) {
+          await minioClient.makeBucket('profile-pictures');
+        }
 
-    await serviceProvider.save();
-    res.status(200).json({ message: 'Profile updated successfully', serviceProvider });
+        // Upload to MinIO
+        await minioClient.putObject(
+          'profile-pictures',
+          fileName,
+          req.file.buffer,
+          req.file.buffer.length,
+          { 'Content-Type': req.file.mimetype }
+        );
+
+        // Generate URL
+        profilePictureUrl = `${MINIO_PUBLIC_ENDPOINT}/profile-pictures/${fileName}`;
+        
+      } catch (uploadError) {
+        console.error('Image upload error:', uploadError);
+        return res.status(500).json({ 
+          success: false, 
+          message: 'Failed to upload image',
+          error: uploadError.message 
+        });
+      }
+    }
+
+    // Update provider details including profile picture URL
+    const updatedProvider = await serviceProvider.update({
+      fname: fname || serviceProvider.fname,
+      lname: lname || serviceProvider.lname,
+      address: address || serviceProvider.address,
+      latitude: latitude || serviceProvider.latitude,
+      longitude: longitude || serviceProvider.longitude,
+      locality: locality || serviceProvider.locality,
+      phone: phone || serviceProvider.phone,
+      username: username || serviceProvider.username,
+      aadhaar: aadhaar || serviceProvider.aadhaar,
+      profilePicture: profilePictureUrl
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      serviceProvider: updatedProvider
+    });
+
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Profile update error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 });
 

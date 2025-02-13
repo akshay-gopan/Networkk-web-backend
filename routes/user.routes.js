@@ -4,9 +4,18 @@ const jwt = require('jsonwebtoken');
 const { User } = require('../models'); // Import your User model
 const authenticateToken = require('../middleware/authenticateToken'); // Import JWT middleware
 const router = express.Router();
+const multer = require('multer');
+const minioClient = require('../config/minio.config')
+
 
 // Load JWT secret from environment variables
 const JWT_SECRET = process.env.JWT_SECRET ;
+
+// Configure Multer for file handling
+const storage = multer.memoryStorage(); // Store files in memory for direct upload
+const upload = multer({ storage });
+const MINIO_PUBLIC_ENDPOINT = 'http://localhost:9000'; // Match your MinIO setup
+
 
 // Sign-up route (Register and log in)
 router.post('/signup', async (req, res) => {
@@ -68,39 +77,115 @@ router.post('/signin', async (req, res) => {
 });
 
 // Profile update route (Protected by JWT)
-router.put('/profile', authenticateToken, async (req, res) => {
-  const { fname, lname, address, latitude, longitude, locality, phone, username, aadhaar } = req.body;
+// router.put('/profile', authenticateToken, upload.single('profilePicture'), async (req, res) => {
+//   const { fname, lname, address, latitude, longitude, locality, phone, username, aadhaar } = req.body;
 
+//   try {
+//     // Find the authenticated user by ID (from JWT token)
+//     const user = await User.findByPk(req.user.id);
+
+//     if (!user) {
+//       return res.status(404).json({ message: 'User not found' });
+//     }
+
+//     // Update user profile details
+//     user.fname = fname || user.fname;
+//     user.lname = lname || user.lname;
+//     user.address = address || user.address;
+//     user.latitude = latitude || user.latitude;
+//     user.longitude = longitude || user.longitude;
+//     user.locality = locality || user.locality;
+//     user.phone = phone || user.phone;
+//     user.username = username || user.username;
+//     user.aadhaar = aadhaar || user.aadhaar;
+
+//     // If the user is updating their password, hash it before saving
+//     // if (password) {
+//     //   user.password = await bcrypt.hash(password, 10);
+//     // }
+
+//     await user.save();
+//     res.status(200).json({ message: 'Profile updated successfully', user });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
+
+router.put('/profile', authenticateToken, upload.single('profilePicture'), async (req, res) => {
   try {
-    // Find the authenticated user by ID (from JWT token)
+    const { fname, lname, address, latitude, longitude, locality, phone, username, aadhaar } = req.body;
     const user = await User.findByPk(req.user.id);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Update user profile details
-    user.fname = fname || user.fname;
-    user.lname = lname || user.lname;
-    user.address = address || user.address;
-    user.latitude = latitude || user.latitude;
-    user.longitude = longitude || user.longitude;
-    user.locality = locality || user.locality;
-    user.phone = phone || user.phone;
-    user.username = username || user.username;
-    user.aadhaar = aadhaar || user.aadhaar;
+    let profilePictureUrl = user.profilePicture;
 
-    // If the user is updating their password, hash it before saving
-    // if (password) {
-    //   user.password = await bcrypt.hash(password, 10);
-    // }
+    // Handle image upload if file exists
+    if (req.file) {
+      try {
+        // Create unique filename
+        const fileName = `users/${req.user.id}/${Date.now()}.${req.file.originalname.split('.').pop()}`;
+        
+        // Check and create bucket
+        const bucketExists = await minioClient.bucketExists('profile-pictures');
+        console.log("Bucket exists:", bucketExists);
+        if (!bucketExists) {
+          await minioClient.makeBucket('profile-pictures');
+        }
 
-    await user.save();
-    res.status(200).json({ message: 'Profile updated successfully', user });
+        // Upload to MinIO
+        await minioClient.putObject(
+          'profile-pictures',
+          fileName,
+          req.file.buffer,
+          req.file.buffer.length,
+          { 'Content-Type': req.file.mimetype }
+        );
+
+        // Generate URL
+        profilePictureUrl = `${MINIO_PUBLIC_ENDPOINT}/profile-pictures/${fileName}`;
+        
+      } catch (uploadError) {
+        console.error('Image upload error:', uploadError);
+        return res.status(500).json({ 
+          success: false, 
+          message: 'Failed to upload image',
+          error: uploadError.message 
+        });
+      }
+    }
+
+    // Update provider details including profile picture URL
+    const updatedProvider = await user.update({
+      fname: fname || user.fname,
+      lname: lname || user.lname,
+      address: address || user.address,
+      latitude: latitude || user.latitude,
+      longitude: longitude || user.longitude,
+      locality: locality || user.locality,
+      phone: phone || user.phone,
+      username: username || user.username,
+      aadhaar: aadhaar || user.aadhaar,
+      profilePicture: profilePictureUrl
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: updatedProvider
+    });
+
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Profile update error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 });
+
 
 // Get all users (Protected by JWT)
 router.get('/', authenticateToken, async (req, res) => {

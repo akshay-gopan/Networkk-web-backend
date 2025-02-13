@@ -67,6 +67,10 @@ module.exports = (sequelize) => {
       type: DataTypes.DECIMAL(10, 7),
       allowNull: true,
     },
+    profilePicture: {
+      type: DataTypes.STRING, // Store the image URL
+      allowNull: true,
+    },
     completedJobs: {
       type: DataTypes.JSON,
       allowNull: true,
