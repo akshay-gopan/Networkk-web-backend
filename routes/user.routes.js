@@ -38,7 +38,11 @@ router.post('/signup', async (req, res) => {
     const token = jwt.sign({ id: newUser.userId }, JWT_SECRET, { expiresIn: '1h' });
 
     // Send the token to the client
-    res.status(201).json({ message: 'User created successfully', token });
+    res.status(201).json({ 
+      message: 'User created successfully', 
+      token,
+      userId: newUser.userId  // Add userId to response
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -70,7 +74,11 @@ router.post('/signin', async (req, res) => {
     const token = jwt.sign({ id: user.userId }, JWT_SECRET, { expiresIn: '1h' }); // Token expires in 1 hour
 
     // Send the token to the client
-    res.status(200).json({ message: 'Login successful', token });
+    res.status(200).json({ 
+      message: 'Login successful', 
+      token,
+      userId: user.userId  // Add userId to response
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

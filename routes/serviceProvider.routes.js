@@ -54,24 +54,23 @@ router.post('/signin', async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Find the service provider by email
     const serviceProvider = await ServiceProvider.findOne({ where: { email } });
-    console.log("service provider exist");
     if (!serviceProvider) {
       return res.status(404).json({ message: 'Service provider not found' });
     }
 
-    // Compare the password
     const isPasswordValid = bcrypt.compare(password, serviceProvider.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid password' });
     }
 
-    // Generate a JWT token
     const token = jwt.sign({ id: serviceProvider.serviceProviderId }, JWT_SECRET, { expiresIn: '1h' });
 
-    // Send the token to the client
-    res.status(200).json({ message: 'Login successful', token });
+    res.status(200).json({ 
+      message: 'Login successful', 
+      token,
+      userId: serviceProvider.serviceProviderId  // Add userId to response
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
