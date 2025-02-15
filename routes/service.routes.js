@@ -150,46 +150,56 @@ router.post('/create', upload.array('images', 5), async (req, res) => {
 });
 
 // Update an existing service
-router.put('/update/:id', async (req, res) => {
+router.put('/update/:id', upload.array('images', 5), async (req, res) => {
+  const transaction = await sequelize.transaction();
   try {
     const { id } = req.params;
-    const {
-      title,
-      description,
-      category,
-      basePrice,
-      demoPics,
-      holidays,
-      isOpen,
-      address,
-      locality,
-      latitude,
-      longitude,
-    } = req.body;
+    const serviceData = JSON.parse(req.body.serviceData);
+    const existingImages = JSON.parse(req.body.existingImages || '[]');
 
-    // Find the service by ID
+    // Ensure holidays is stored as JSON string in database
+    if (serviceData.holidays && Array.isArray(serviceData.holidays)) {
+      serviceData.holidays = JSON.stringify(serviceData.holidays);
+    }
+
+    // Find the service
     const service = await Service.findByPk(id);
     if (!service) {
+      await transaction.rollback();
       return res.status(404).json({ error: 'Service not found' });
     }
 
+    // Handle new image uploads
+    let newImageUrls = [];
+    if (req.files && req.files.length > 0) {
+      newImageUrls = await Promise.all(
+        req.files.map(async (file) => {
+          const fileName = `${serviceData.serviceProviderId}/${id}/${Date.now()}-${file.originalname}`;
+          await minioClient.putObject('work-images', fileName, file.buffer, {
+            'Content-Type': file.mimetype
+          });
+          return `${MINIO_PUBLIC_ENDPOINT}/work-images/${fileName}`;
+        })
+      );
+    }
+
+    // Combine existing and new image URLs
+    const updatedDemoPics = [...existingImages, ...newImageUrls];
+
     // Update the service
     await service.update({
-      title,
-      description,
-      category,
-      basePrice,
-      demoPics,
-      holidays,
-      isOpen,
-      address,
-      locality,
-      latitude,
-      longitude,
-    });
+      ...serviceData,
+      demoPics: JSON.stringify(updatedDemoPics),
+    }, { transaction });
 
-    res.status(200).json({ message: 'Service updated successfully', service });
+    await transaction.commit();
+    res.status(200).json({ 
+      message: 'Service updated successfully', 
+      service: await service.reload()
+    });
   } catch (error) {
+    await transaction.rollback();
+    console.error('Service update error:', error);
     res.status(500).json({ error: error.message });
   }
 });
