@@ -108,7 +108,11 @@ router.get('/email/:email', async (req, res) => {
 // Profile update route (Protected by JWT)
 router.put('/profile', authenticateToken, upload.single('profilePicture'), async (req, res) => {
   try {
-    const { fname, lname, address, latitude, longitude, locality, phone, username, aadhaar } = req.body;
+    const { 
+      fname, lname, address, latitude, longitude, locality, 
+      phone, username, aadhaar, languages, skills, experience 
+    } = req.body;
+    
     const serviceProvider = await ServiceProvider.findByPk(req.user.id);
 
     if (!serviceProvider) {
@@ -152,7 +156,7 @@ router.put('/profile', authenticateToken, upload.single('profilePicture'), async
       }
     }
 
-    // Update provider details including profile picture URL
+    // Update provider details including new fields
     const updatedProvider = await serviceProvider.update({
       fname: fname || serviceProvider.fname,
       lname: lname || serviceProvider.lname,
@@ -163,6 +167,9 @@ router.put('/profile', authenticateToken, upload.single('profilePicture'), async
       phone: phone || serviceProvider.phone,
       username: username || serviceProvider.username,
       aadhaar: aadhaar || serviceProvider.aadhaar,
+      languages: languages || serviceProvider.languages,
+      skills: skills || serviceProvider.skills,
+      experience: experience || serviceProvider.experience,
       profilePicture: profilePictureUrl
     });
 
