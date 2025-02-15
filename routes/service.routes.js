@@ -228,10 +228,38 @@ router.get('/:id', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const services = await Service.findAll({
-      include: [{ model: ServiceProvider, as: 'serviceProvider' }], // Include service provider details
+      include: [{ 
+        model: ServiceProvider, 
+        as: 'serviceProvider' 
+      }],
+      attributes: {
+        include: [
+          'serviceId',
+          'title',
+          'description',
+          'category',
+          'basePrice',
+          'demoPics',
+          'holidays',
+          'isOpen',
+          'status',
+          'avgRating'
+        ]
+      }
     });
 
-    res.status(200).json(services);
+    // Parse holidays for each service
+    const servicesWithParsedData = services.map(service => {
+      const serviceData = service.get({ plain: true });
+      try {
+        serviceData.holidays = JSON.parse(serviceData.holidays || '[]');
+      } catch (e) {
+        serviceData.holidays = [];
+      }
+      return serviceData;
+    });
+
+    res.status(200).json(servicesWithParsedData);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
