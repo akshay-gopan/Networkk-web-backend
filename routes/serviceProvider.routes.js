@@ -110,7 +110,8 @@ router.put('/profile', authenticateToken, upload.single('profilePicture'), async
   try {
     const { 
       fname, lname, address, latitude, longitude, locality, 
-      phone, username, aadhaar, languages, skills, experience 
+      phone, username, aadhaar, languages, skills, experience,
+      link // Add this line
     } = req.body;
     
     const serviceProvider = await ServiceProvider.findByPk(req.user.id);
@@ -170,6 +171,7 @@ router.put('/profile', authenticateToken, upload.single('profilePicture'), async
       languages: languages || serviceProvider.languages,
       skills: skills || serviceProvider.skills,
       experience: experience || serviceProvider.experience,
+      link: link || serviceProvider.link, // Add this line
       profilePicture: profilePictureUrl
     });
 
