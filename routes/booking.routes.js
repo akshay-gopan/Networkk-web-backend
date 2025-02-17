@@ -1,25 +1,26 @@
 const express = require('express');
 const { Booking, Service, User, ServiceProvider, Payment } = require('../models');
+const { sendBookingNotificationEmail } = require('../utils/emailService');
 const router = express.Router();
 
 // Create a new booking
 router.post('/create', async (req, res) => {
-  const { 
-    bookingStatus, 
-    paymentStatus, 
-    basePayment, 
-    description, 
-    extraPayment, 
-    isReview, 
-    serviceId, 
-    userId, 
-    serviceProviderId,
-    bookingDate,
-    bookingTime
-  } = req.body;
-
   try {
-    // Create a new booking entry
+    const { 
+      bookingStatus, 
+      paymentStatus, 
+      basePayment, 
+      description, 
+      extraPayment, 
+      isReview, 
+      serviceId, 
+      userId, 
+      serviceProviderId,
+      bookingDate,
+      bookingTime
+    } = req.body;
+
+    // Create booking
     const newBooking = await Booking.create({
       bookingStatus,
       paymentStatus,
@@ -34,8 +35,44 @@ router.post('/create', async (req, res) => {
       bookingTime,
     });
 
+    // Fetch all required details
+    const [service, user, serviceProvider] = await Promise.all([
+      Service.findByPk(serviceId),
+      User.findByPk(userId),
+      ServiceProvider.findByPk(serviceProviderId)
+    ]);
+
+    if (serviceProvider && serviceProvider.email) {
+      try {
+        await sendBookingNotificationEmail(
+          serviceProvider.email,
+          {
+            bookingId: newBooking.bookingId,
+            bookingDate,
+            bookingTime,
+            description,
+            basePayment,
+            service: {
+              id: service.serviceId,
+              title: service.title,
+              category: service.category
+            },
+            user: {
+              id: user.userId,
+              name: `${user.fname || ''} ${user.lname || ''}`.trim(),
+              phone: user.phone,
+              address: user.address
+            }
+          }
+        );
+      } catch (emailError) {
+        console.error('Error sending booking notification email:', emailError);
+      }
+    }
+
     res.status(201).json({ message: 'Booking created successfully', booking: newBooking });
   } catch (error) {
+    console.error('Error creating booking:', error);
     res.status(500).json({ error: error.message });
   }
 });
