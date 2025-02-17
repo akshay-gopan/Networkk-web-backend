@@ -48,6 +48,14 @@ module.exports = (sequelize) => {
           max: 5, // Maximum rating value
         },
       },
+      status: {
+        type: DataTypes.ENUM('pending', 'completed', 'failed'),
+        allowNull: false,
+        defaultValue: 'pending',
+        validate: {
+          isIn: [['pending', 'completed', 'failed']]
+        }
+      }
     },
     {
       tableName: 'reviews',
