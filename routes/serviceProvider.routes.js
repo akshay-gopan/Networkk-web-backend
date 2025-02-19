@@ -99,9 +99,17 @@ router.get('/email/:email', async (req, res) => {
       return res.status(404).json({ message: 'Service provider not found' });
     }
     
-    res.status(200).json(provider);
+    res.status(200).json({ 
+      success: true,
+      seller: {
+        name: `${provider.fname || ''} ${provider.lname || ''}`.trim()
+      }
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
   }
 });
 
