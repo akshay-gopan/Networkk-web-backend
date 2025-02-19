@@ -74,6 +74,13 @@ module.exports = (sequelize) => {
     completedJobs: {
       type: DataTypes.JSON,
       allowNull: true,
+    },
+    link: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      validate: {
+        isUrl: true // Validates that the string is a URL
+      }
     }
   }, {
     timestamps: true, // Enable createdAt and updatedAt fields

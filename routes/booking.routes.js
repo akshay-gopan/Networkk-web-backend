@@ -1,25 +1,26 @@
 const express = require('express');
 const { Booking, Service, User, ServiceProvider, Payment } = require('../models');
+const { sendBookingNotificationEmail } = require('../utils/emailService');
 const router = express.Router();
 
 // Create a new booking
 router.post('/create', async (req, res) => {
-  const { 
-    bookingStatus, 
-    paymentStatus, 
-    basePayment, 
-    description, 
-    extraPayment, 
-    isReview, 
-    serviceId, 
-    userId, 
-    serviceProviderId,
-    bookingDate,
-    bookingTime
-  } = req.body;
-
   try {
-    // Create a new booking entry
+    const { 
+      bookingStatus, 
+      paymentStatus, 
+      basePayment, 
+      description, 
+      extraPayment, 
+      isReview, 
+      serviceId, 
+      userId, 
+      serviceProviderId,
+      bookingDate,
+      bookingTime
+    } = req.body;
+
+    // Create booking
     const newBooking = await Booking.create({
       bookingStatus,
       paymentStatus,
@@ -34,8 +35,44 @@ router.post('/create', async (req, res) => {
       bookingTime,
     });
 
+    // Fetch all required details
+    const [service, user, serviceProvider] = await Promise.all([
+      Service.findByPk(serviceId),
+      User.findByPk(userId),
+      ServiceProvider.findByPk(serviceProviderId)
+    ]);
+
+    if (serviceProvider && serviceProvider.email) {
+      try {
+        await sendBookingNotificationEmail(
+          serviceProvider.email,
+          {
+            bookingId: newBooking.bookingId,
+            bookingDate,
+            bookingTime,
+            description,
+            basePayment,
+            service: {
+              id: service.serviceId,
+              title: service.title,
+              category: service.category
+            },
+            user: {
+              id: user.userId,
+              name: `${user.fname || ''} ${user.lname || ''}`.trim(),
+              phone: user.phone,
+              address: user.address
+            }
+          }
+        );
+      } catch (emailError) {
+        console.error('Error sending booking notification email:', emailError);
+      }
+    }
+
     res.status(201).json({ message: 'Booking created successfully', booking: newBooking });
   } catch (error) {
+    console.error('Error creating booking:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -100,8 +137,50 @@ router.get('/provider', async (req, res) => {
   }
 });
 
+// Get booking categories for traffic source
+router.get('/categories', async (req, res) => {
+  try {
+    const bookings = await Booking.findAll({
+      include: [
+        { 
+          model: Service,
+          as: 'service',
+          attributes: ['category']
+        }
+      ]
+    });
+
+    // Count bookings by category
+    const categoryCounts = bookings.reduce((acc, booking) => {
+      const category = booking.service?.category || 'Other';
+      acc[category] = (acc[category] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Convert to array format
+    const categories = Object.entries(categoryCounts).map(([category, count]) => ({
+      category,
+      count
+    }));
+
+    res.status(200).json({ 
+      success: true,
+      categories 
+    });
+  } catch (error) {
+    console.error('Error fetching booking categories:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to fetch booking categories' 
+    });
+  }
+});
+
+
 // Get a specific booking by ID
 router.get('/:id', async (req, res) => {
+
+
   const { id } = req.params;
 
   try {
@@ -180,5 +259,7 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+
 
 module.exports = router;

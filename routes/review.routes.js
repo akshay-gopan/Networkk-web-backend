@@ -23,13 +23,14 @@ router.post('/create', async (req, res) => {
       return res.status(404).json({ error: `Booking ID ${bookingId} does not exist` });
     }
 
-    // Create the review
+    // Create the review with initial status as 'completed'
     const newReview = await Review.create({
       serviceId,
       userId,
       bookingId,
       description,
       rating,
+      status: 'completed' // Set initial status to completed
     });
 
     res.status(201).json({ message: 'Review created successfully', review: newReview });
