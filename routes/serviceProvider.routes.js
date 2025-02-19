@@ -102,7 +102,8 @@ router.get('/email/:email', async (req, res) => {
     res.status(200).json({ 
       success: true,
       seller: {
-        name: `${provider.fname || ''} ${provider.lname || ''}`.trim()
+        name: `${provider.fname || ''} ${provider.lname || ''}`.trim(),
+        serviceProviderId: provider.serviceProviderId,
       }
     });
   } catch (error) {
