@@ -121,4 +121,58 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+
+// Get reviews by serviceId
+router.get('/service/:serviceId', async (req, res) => {
+  try {
+    const { serviceId } = req.params;
+    
+    if (!serviceId) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Service ID is required' 
+      });
+    }
+
+    // Verify service exists
+    const serviceExists = await Service.findByPk(serviceId);
+    if (!serviceExists) {
+      return res.status(404).json({ 
+        success: false,
+        message: `Service with ID ${serviceId} not found` 
+      });
+    }
+
+    // Get all reviews for the service
+    const reviews = await Review.findAll({
+      where: { serviceId: serviceId },
+      include: [
+        { model: User, as: 'user', attributes: ['userId', 'fname', 'lname', 'profilePicture'] },
+        { model: Booking, as: 'booking', attributes: ['bookingId', 'bookingDate', 'bookingTime'] }
+      ],
+      order: [['createdAt', 'DESC']], // Newest reviews first
+      attributes: ['reviewId', 'rating', 'description', 'createdAt', 'status']
+    });
+
+    // Calculate average rating
+    const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+    const averageRating = reviews.length > 0 ? (totalRating / reviews.length).toFixed(1) : 0;
+
+    res.status(200).json({
+      success: true,
+      count: reviews.length,
+      averageRating: parseFloat(averageRating),
+      reviews: reviews
+    });
+    
+  } catch (error) {
+    console.error('Error fetching reviews by service:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to fetch reviews',
+      error: error.message 
+    });
+  }
+});
+
 module.exports = router;

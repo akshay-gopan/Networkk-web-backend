@@ -2,7 +2,7 @@ const express = require('express');
 const Sequelize = require('sequelize');
 const sequelize = require('../config/sequelize.config');
 const router = express.Router();
-const { Service, ServiceProvider } = require('../models'); // Import models
+const { Service, ServiceProvider, Review } = require('../models'); // Import models
 const multer = require('multer');
 const minioClient = require('../config/minio.config')
 
@@ -264,6 +264,70 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// router.get('/', async (req, res) => {
+//   try {
+//     const services = await Service.findAll({
+//       include: [
+//         { 
+//           model: ServiceProvider, 
+//           as: 'serviceProvider' 
+//         },
+//         {
+//           model: Review,
+//           as: 'reviews',
+//           //attributes: ['rating']
+//         }
+//       ],
+//       attributes: {
+//         include: [
+//           'serviceId',
+//           'title',
+//           'description',
+//           'category',
+//           'basePrice',
+//           'demoPics',
+//           'holidays',
+//           'isOpen',
+//           'status',
+//           'avgRating'
+//         ]
+//       }
+//     });
+
+//     // Parse data and calculate ratings for each service
+//     const servicesWithParsedData = services.map(service => {
+//       const serviceData = service.get({ plain: true });
+      
+//       // Parse JSON fields
+//       try {
+//         serviceData.holidays = JSON.parse(serviceData.holidays || '[]');
+//       } catch (e) {
+//         serviceData.holidays = [];
+//       }
+      
+//       // Calculate average rating from reviews
+//       if (serviceData.reviews && serviceData.reviews.length > 0) {
+//         const totalRating = serviceData.reviews.reduce((sum, review) => sum + review.rating, 0);
+//         serviceData.avgRating = (totalRating / serviceData.reviews.length).toFixed(1);
+//         serviceData.reviewCount = serviceData.reviews.length;
+//       } else {
+//         serviceData.avgRating = "0.0";
+//         serviceData.reviewCount = 0;
+//       }
+      
+//       // Remove the full review objects to reduce payload size
+//       delete serviceData.reviews;
+      
+//       return serviceData;
+//     });
+
+//     res.status(200).json(servicesWithParsedData);
+//   } catch (error) {
+//     console.error('Error fetching services:', error);
+//     res.status(500).json({ error: error.message });
+//   }
+//});
 
 // Get services by provider ID
 router.get('/provider/:id', async (req, res) => {
