@@ -176,6 +176,28 @@ router.get('/categories', async (req, res) => {
   }
 });
 
+// Add this new route to get holiday dates for a service
+router.get('/holidays/:serviceId', async (req, res) => {
+  try {
+    const { serviceId } = req.params;
+    const service = await Service.findByPk(serviceId);
+
+    if (!service) {
+      return res.status(404).json({ error: 'Service not found' });
+    }
+
+    // Parse the holiday dates from string to array
+    const holidays = service.holidays ? JSON.parse(service.holidays) : [];
+
+    res.status(200).json({ holidays });
+  } catch (error) {
+    console.error('Error fetching holiday dates:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch holiday dates',
+      details: error.message 
+    });
+  }
+});
 
 // Get a specific booking by ID
 router.get('/:id', async (req, res) => {
